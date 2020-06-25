@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="pt-br">
+<head>
+    <!-- Required meta tags -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/css/bootstrap.min.css"
+          integrity="sha384-9aIt2nRpC12Uk9gS9baDl411NQApFmC26EwAOH8WgZl5MYYxFfc+NcPb1dKGj7Sk" crossorigin="anonymous">
+
+    <title>Hello, world!</title>
+</head>
+<body>
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark" style="margin-bottom: 15px">
+    <a id="nav-titulo" class="navbar-brand" href="#">Login</a>
+</nav>
+<div class="container">
+    <!-- Login -->
+    <form id="form-login">
+        <div class="form-group">
+            <label for="input-login">Login</label>
+            <input type="text" class="form-control" id="input-login">
+        </div>
+        <button id="btn-logar" type="submit" class="btn btn-primary">Logar</button>
+    </form>
+
+    <!-- Etapa de Recomendação -->
+    <form id="form-recomendacao" class="d-none">
+        <div class="form-group">
+            <label for="input-filme">Nome do Filme</label>
+            <input type="text" class="form-control" id="input-filme">
+        </div>
+        <button id="btn-sugerir" type="submit" class="btn btn-primary">Sugerir</button>
+    </form>
+</div>
+
+<!-- Optional JavaScript -->
+<!-- jQuery first, then Popper.js, then Bootstrap JS -->
+<script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"
+        integrity="sha384-DfXdz2htPH0lsSSs5nCTpuj/zy4C+OGpamoFVy38MVBnE+IbbVYUew+OrCXaRkfj"
+        crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js"
+        integrity="sha384-Q6E9RHvbIyZFJoft+2mJbHaEWldlvI9IOYy5n3zV9zzTtmI3UksdQRVvoxMfooAo"
+        crossorigin="anonymous"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/js/bootstrap.min.js"
+        integrity="sha384-OgVRvuATP1z7JjHLkuOU7Xw704+h835Lr+6QL9UvYjZE3Ipu6Tp75j7Bh/kR0JKI"
+        crossorigin="anonymous"></script>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+<script>
+    let login = null;
+    let person = null;
+    let round = null;
+
+    $.ajax({
+        type: 'GET',
+        url: '/rounds/current',
+        success: function(data) {
+            round = data;
+        },
+        error: function(data, status, error) {
+            alert('Erro ao obter a rodada atual')
+        },
+        contentType: 'application/json',
+        dataType: 'json'
+    });
+
+    $(document).ready(function () {
+        const navTitulo = $('#nav-titulo');
+        const formLogin = $('#form-login');
+        const inputLogin = $('#input-login');
+        const formRecomendacao = $('#form-recomendacao');
+        const inputFilme = $('#input-filme');
+
+        inputLogin.focus();
+
+        formLogin.submit(function (event) {
+            event.preventDefault();
+            login = inputLogin.val();
+
+            $.ajax({
+                type: 'GET',
+                url: '/people/' + login,
+                success: function(data) {
+                    person = data;
+                    navTitulo.text('Etapa: Recomendação');
+                    formLogin.addClass('d-none');
+                    formRecomendacao.removeClass('d-none');
+                    inputFilme.focus();
+                },
+                error: function(data, status, error) {
+                    alert('Login errado')
+                },
+                contentType: 'application/json',
+                dataType: 'json'
+            });
+        });
+
+        formRecomendacao.submit(function sugerir(event) {
+            event.preventDefault();
+            $.ajax({
+                type: 'POST',
+                url: 'recommendations',
+                data: JSON.stringify({person: person, title: inputFilme.val()}),
+                success: function(data) {
+                    console.log('success', data);
+                },
+                error: function(data) {
+                    if (data.status === 400) {
+                        const message = "Você já fez uma recomendação para essa rodada. O filme foi " +
+                            data.responseJson + ". Deseja trocar a recomendação?"
+                        if (window.confirm(message)) {
+                            $.ajax({
+                                type: 'PUT',
+                                url: 'recommendations',
+                                data: JSON.stringify({person: person, title: inputFilme.val()}),
+                                success: function (data) {
+                                    console.log('success', data);
+                                },
+                                error: function (data) {
+                                    alert("Erro ao trocar recomendação");
+                                    console.log(data);
+                                },
+                                contentType: 'application/json',
+                                dataType: 'json'
+                            });
+                        }
+                    }
+                },
+                contentType: 'application/json',
+                dataType: 'json'
+            });
+        });
+
+    });
+</script>
+</body>
+</html>
