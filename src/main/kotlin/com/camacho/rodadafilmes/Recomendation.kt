@@ -7,7 +7,7 @@ class Recommendation(
         @field:Id
         @field:GeneratedValue(strategy = GenerationType.IDENTITY)
         val id: Int? = null,
-        val title: String,
+        var title: String,
         val totalAlreadySawBefore: Int = 1,
         val totalAlreadySawRound: Int = 1,
         @ManyToOne

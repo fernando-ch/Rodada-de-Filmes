@@ -7,8 +7,8 @@ import org.springframework.web.bind.annotation.RestController
 @RestController
 @RequestMapping("rounds")
 class RoundController(
-        private val roundRepository: RoundRepository
+        private val roundService: RoundService
 ) {
     @GetMapping("current")
-    fun currentRound() = roundRepository.findByCurrent(true)
+    fun currentRound() = roundService.findCurrentRound()
 }
