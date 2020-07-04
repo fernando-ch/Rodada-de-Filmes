@@ -1,294 +1,97 @@
 <!doctype html>
 <html lang="pt-br">
 <head>
-    <!-- Required meta tags -->
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+<!--    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.9.0/css/bulma.min.css">-->
+<!--    <link rel="stylesheet" href="https://unpkg.com/purecss@2.0.3/build/pure-min.css"-->
+<!--          integrity="sha384-cg6SkqEOCV1NbJoCu11+bm0NvBRc8IYLRGXkmNrqUBfTjmMYwNKPWBTIKyw9mHNJ" crossorigin="anonymous">-->
 
-    <!-- Bootstrap CSS -->
-    <!--    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/css/bootstrap.min.css"-->
-    <!--          integrity="sha384-9aIt2nRpC12Uk9gS9baDl411NQApFmC26EwAOH8WgZl5MYYxFfc+NcPb1dKGj7Sk" crossorigin="anonymous">-->
+<!--    <link rel="stylesheet" href="https://unpkg.com/purecss@2.0.3/build/grids-responsive-min.css" />-->
 
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.9.0/css/bulma.min.css">
+    <title>Rodada de Filmes</title>
+    <script src="main.js"></script>
+    <style>
+        body {
+            background: url("cinema.jpg") no-repeat center center fixed;
+            background-size: cover;
+        }
 
-    <title>Hello, world!</title>
+        form {
+            background-color: #132828b5;
+            padding: 20px;
+            /*margin-top: 100px;*/
+            height: 120px;
+        }
+
+        input[type=text] {
+            width: 100%;
+            border: 2px solid #aaa;
+            border-radius: 4px;
+            margin: 8px 0;
+            outline: none;
+            padding: 8px;
+            box-sizing: border-box;
+            transition: .3s;
+        }
+
+        input[type=text]:focus {
+            border-color: dodgerblue;
+            box-shadow: 0 0 8px 0 dodgerblue;
+        }
+
+        button {
+            margin-top: 10px;
+            background-color: #0078e7;
+            border: none;
+            color: white;
+            padding: 10px 32px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 16px;
+            width: 100%;
+        }
+
+        /*#form-login {*/
+        /*    padding: 20px;*/
+        /*    margin-top: auto;*/
+        /*    margin-bottom: auto;*/
+        /*}*/
+
+        .error {
+            color: red;
+        }
+
+        /*form {*/
+        /*    margin: 15px;*/
+        /*}*/
+
+        /*form label {*/
+        /*    display: block;*/
+        /*}*/
+
+        form span {
+            display: block;
+            font-size: 12px;
+            max-width: 500px;
+        }
+
+        /*input {*/
+        /*    margin-top: 10px;*/
+        /*}*/
+
+        /*button {*/
+        /*    margin-top: 10px;*/
+        /*}*/
+    </style>
 </head>
 <body>
-
-<nav class="navbar is-link" role="navigation" aria-label="main navigation">
-    <div class="navbar-brand">
-        <a id="nav-title" class="navbar-item">
-            Logar
-        </a>
-    </div>
-</nav>
-
-<section class="section is-medium">
-    <div id="form-login" class="container">
-        <div class="field">
-            <label class="label">Login</label>
-            <div class="control">
-                <input id="input-login" class="input" type="text">
-            </div>
-            <p id="login-error" class="help is-danger is-hidden"></p>
-        </div>
-        <div class="field">
-            <div class="control">
-                <button id="button-login" class="button is-link">Entrar</button>
-            </div>
-        </div>
-    </div>
-
-    <div id="form-recommendation" class="container is-hidden">
-        <div class="field">
-            <label class="label">Nome do Filme</label>
-            <div class="control">
-                <input id="input-movie" class="input" type="text">
-            </div>
-        </div>
-        <div class="field">
-            <div class="control">
-                <button id="btn-recommend" class="button is-link">Recomendar</button>
-            </div>
-        </div>
-    </div>
-
-    <div id="recommendations" class="is-hidden">
-        <table class="table is-striped is-fullwidth">
-            <tbody>
-                <tr>
-                    <td id="td1"></td>
-                    <td>
-                        <div class="control">
-                            <label class="radio">
-                                <input type="radio" name="answer">
-                                Sim
-                            </label>
-                            <label class="radio">
-                                <input type="radio" name="answer">
-                                Não
-                            </label>
-                        </div>
-                    </td>
-                </tr>
-                <tr>
-                    <td id="td2"></td>
-                    <td>
-                        <div class="control">
-                            <label class="radio">
-                                <input type="radio" name="answer">
-                                Sim
-                            </label>
-                            <label class="radio">
-                                <input type="radio" name="answer">
-                                Não
-                            </label>
-                        </div>
-                    </td>
-                </tr>
-                <tr>
-                    <td id="td3"></td>
-                    <td>
-                        <div class="control">
-                            <label class="radio">
-                                <input type="radio" name="answer">
-                                Sim
-                            </label>
-                            <label class="radio">
-                                <input type="radio" name="answer">
-                                Não
-                            </label>
-                        </div>
-                    </td>
-                </tr>
-                <tr>
-                    <td id="td4"></td>
-                    <td>
-                        <div class="control">
-                            <label class="radio">
-                                <input type="radio" name="answer">
-                                Sim
-                            </label>
-                            <label class="radio">
-                                <input type="radio" name="answer">
-                                Não
-                            </label>
-                        </div>
-                    </td>
-                </tr>
-                <tr>
-                    <td id="td5"></td>
-                    <td>
-                        <div class="control">
-                            <label class="radio">
-                                <input type="radio" name="answer">
-                                Sim
-                            </label>
-                            <label class="radio">
-                                <input type="radio" name="answer">
-                                Não
-                            </label>
-                        </div>
-                    </td>
-                </tr>
-                <tr>
-                    <td id="td6"></td>
-                    <td>
-                        <div class="control">
-                            <label class="radio">
-                                <input type="radio" name="answer">
-                                Sim
-                            </label>
-                            <label class="radio">
-                                <input type="radio" name="answer">
-                                Não
-                            </label>
-                        </div>
-                    </td>
-                </tr>
-                <tr>
-                    <td id="td7"></td>
-                    <td>
-                        <div class="control">
-                            <label class="radio">
-                                <input type="radio" name="answer">
-                                Sim
-                            </label>
-                            <label class="radio">
-                                <input type="radio" name="answer">
-                                Não
-                            </label>
-                        </div>
-                    </td>
-                </tr>
-            </tbody>
-        </table>
-    </div>
-</section>
-
-<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
-<script>
-    let login = null;
-    let person = null;
-    let round = null;
-
-    $(document).ready(function () {
-        const navTitle = $('#nav-title');
-        const formLogin = $('#form-login');
-        const inputLogin = $('#input-login');
-        const formRecommendation = $('#form-recommendation');
-        const inputMovie = $('#input-movie');
-        const loginError = $('#login-error');
-
-        $('#input-login').focus();
-
-        $('#button-login').click(function (event) {
-            login = inputLogin.val();
-
-            makeJsonRequest({
-                type: 'GET',
-                url: '/people/' + login,
-                success: function (data) {
-                    person = data;
-
-                    formLogin.addClass('is-hidden');
-
-                    makeJsonRequest({
-                        type: 'GET',
-                        url: '/rounds/current',
-                        success: function (data) {
-                            round = data;
-                            if (round.step === 'RECOMMENDATION') {
-                                navTitle.text('Etapa - Recomendações');
-                                makeJsonRequest({
-                                    type: 'GET',
-                                    url: '/recommendations/search?personId=' + person.id,
-                                    success: function (data) {
-                                        inputMovie.val(data.title);
-                                        formLogin.addClass('is-hidden');
-                                        formRecommendation.removeClass('is-hidden');
-                                        inputMovie.focus();
-                                    },
-                                    error: function (data) {
-                                        if (data.status !== 404) {
-                                            console.error(data);
-                                            alert("Erro ao pegar filme recomendado")
-                                        } else {
-                                            inputMovie.val("");
-                                            formRecommendation.removeClass('is-hidden');
-                                            inputMovie.focus();
-                                        }
-                                    }
-                                });
-                            } else if (round.step === 'WHO_SAW_WHAT') {
-                                navTitle.text('Etapa - Quem viu o que?');
-                                $('#recommendations').removeClass('is-hidden');
-
-                                makeJsonRequest({
-                                    type: 'GET',
-                                    url: 'recommendations',
-                                    success: function (data) {
-                                        $('#td1').text(data[0].title);
-                                        $('#td2').text(data[1].title);
-                                        $('#td3').text(data[2].title);
-                                        $('#td4').text(data[3].title);
-                                        $('#td5').text(data[4].title);
-                                        $('#td6').text(data[5].title);
-                                        $('#td7').text(data[6].title);
-                                    },
-                                    error: function (data) {
-                                        alert("Erro ao obter recomendações");
-                                        console.log(data);
-                                    }
-                                });
-                            }
-                        },
-                        error: function (data) {
-                            alert('Erro ao obter a rodada atual')
-                        }
-                    });
-                },
-                error: function (data) {
-                    if (data.status === 404) {
-                        loginError.removeClass('is-hidden');
-                        loginError.text('Login inválido');
-                    }
-                }
-            });
+    <div id="myapp"></div>
+    <script>
+        Elm.Main.init({
+            node: document.getElementById('myapp')
         });
-
-        $('#btn-recommend').click(function () {
-            makeJsonRequest({
-                type: 'POST',
-                url: 'recommendations',
-                data: {person: person, title: inputMovie.val()},
-                success: function (data) {
-                    alert("Recomendação feita")
-                },
-                error: function (data) {
-                    alert("Erro ao trocar recomendação");
-                    console.log(data);
-                }
-            });
-        });
-
-    });
-
-    function makeJsonRequest(config) {
-        $.ajax({
-            type: config.type,
-            url: config.url,
-            data: JSON.stringify(config.data),
-            success: config.success,
-            error: config.error || function (data) {
-                console.error(data);
-                alert('Erro')
-            },
-            contentType: 'application/json',
-            dataType: 'json'
-        });
-    }
-
-</script>
+    </script>
 </body>
 </html>
