@@ -1,6 +1,6 @@
-module Recommendation exposing (Recommendation, NewRecommendation, recommendationDecoder, newRecommendationEncoder)
+module Recommendation exposing (Recommendation, NewRecommendation, recommendationsDecoder, recommendationDecoder, newRecommendationEncoder)
 
-import Json.Decode as Decode exposing (Decoder, int, string)
+import Json.Decode as Decode exposing (Decoder, int, string, list)
 import Json.Decode.Pipeline exposing (required)
 import Json.Encode as Encode
 
@@ -8,6 +8,8 @@ import Json.Encode as Encode
 type alias Recommendation =
     { id : Int
     , title: String
+    , totalAlreadySawBefore : Int
+    , totalAlreadySawRound : Int
     }
 
 
@@ -16,6 +18,13 @@ recommendationDecoder =
     Decode.succeed Recommendation
         |> required "id" int
         |> required "title" string
+        |> required "totalAlreadySawBefore" int
+        |> required "totalAlreadySawRound" int
+
+
+recommendationsDecoder : Decoder (List Recommendation)
+recommendationsDecoder =
+    list recommendationDecoder
 
 
 type alias NewRecommendation =

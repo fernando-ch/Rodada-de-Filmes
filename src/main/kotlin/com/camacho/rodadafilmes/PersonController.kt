@@ -10,14 +10,23 @@ import org.springframework.web.bind.annotation.RestController
 @RestController
 @RequestMapping("people", produces = [MediaType.APPLICATION_JSON_VALUE])
 class PersonController(
-        private val personRepository: PersonRepository
+        private val personRepository: PersonRepository,
+        private val recommendationRepository: RecommendationRepository,
+        private val roundRepository: RoundRepository
 ) {
+
+    data class PersonDto (val id: Int, val name: String, val recommendation: Recommendation?)
+
     @GetMapping("{name}")
     fun findByName(@PathVariable name: String): ResponseEntity<Person> {
         val person = personRepository.findByName(name)
 
-        return if (person != null)
+        return if (person != null) {
+            val round = roundRepository.findByCurrent(true)
+            val recommendation = recommendationRepository.findByPersonAndRound(person, round!!)
+            val personDto = PersonDto(person.id!!, person.name, recommendation)
             ResponseEntity.ok(person)
+        }
         else
             ResponseEntity.notFound().build()
     }
