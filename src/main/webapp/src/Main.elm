@@ -50,16 +50,32 @@ type Model
     | RecommendationsChoosePage RecommendationsChooseModel
 
 
-type Message
+type LoginMessage
     = SaveLogin String
     | Login
     | PersonReceived (WebData Person)
-    | RoundReceived (WebData Round)
-    | SaveRecommendation String
+
+
+type RoundLoadingMessage
+    = RoundReceived (WebData Round)
+
+
+type RecommendationMessage
+    = SaveRecommendation String
     | SendRecommendation
     | RecommendationReceived (WebData Recommendation)
-    | RecommendationsReceived (WebData (List Recommendation))
+
+
+type RecommendationsChooseMessage
+    = RecommendationsReceived (WebData (List Recommendation))
     | SaveChooseRecommendation Recommendation String
+
+
+type Message
+    = LoginPageMessage LoginMessage
+    | RoundLoadingPageMessage RoundLoadingMessage
+    | RecommendationPageMessage RecommendationMessage
+    | RecommendationsChoosePageMessage RecommendationsChooseMessage
 
 
 view : Model -> Html Message
@@ -236,14 +252,13 @@ viewRecommendationsError error =
     span [ class "error" ] [ text errorMessage ]
 
 
-
 fetchPerson : String -> Cmd Message
 fetchPerson personName =
     Http.get
         { url = baseUrl ++ "people/" ++ personName
         , expect =
             personDecoder
-                |> Http.expectJson (RemoteData.fromResult >> PersonReceived)
+                |> Http.expectJson (RemoteData.fromResult >> PersonReceived >> LoginPageMessage)
         }
 
 
@@ -253,7 +268,7 @@ fetchCurrentRound =
         { url = baseUrl ++ "rounds/current"
         , expect =
             roundDecoder
-                |> Http.expectJson (RemoteData.fromResult >> RoundReceived)
+                |> Http.expectJson (RemoteData.fromResult >> RoundReceived >> RoundLoadingPageMessage)
         }
 
 fetchRecommendation : Person -> Cmd Message
@@ -262,7 +277,7 @@ fetchRecommendation person =
         { url = baseUrl ++ "recommendations/search/?personId=" ++ String.fromInt person.id
         , expect =
             recommendationDecoder
-                |> Http.expectJson (RemoteData.fromResult >> RecommendationReceived)
+                |> Http.expectJson (RemoteData.fromResult >> RecommendationReceived >> RecommendationPageMessage)
         }
 
 sendRecommendation : ( Person, String ) -> Cmd Message
@@ -272,7 +287,7 @@ sendRecommendation (person, title) =
         , body = Http.jsonBody (newRecommendationEncoder { personId = person.id, title = title })
         , expect =
             recommendationDecoder
-                |> Http.expectJson (RemoteData.fromResult >> RecommendationReceived)
+                |> Http.expectJson (RemoteData.fromResult >> RecommendationReceived >> RecommendationPageMessage)
         }
 
 
@@ -282,71 +297,71 @@ fetchRecommendations =
         { url = baseUrl ++ "recommendations"
         , expect =
             recommendationsDecoder
-                |> Http.expectJson (RemoteData.fromResult >> RecommendationsReceived)
+                |> Http.expectJson (RemoteData.fromResult >> RecommendationsReceived >> RecommendationsChoosePageMessage)
         }
 
 
 update : Message -> Model -> ( Model, Cmd Message )
 update message model =
-    case model of
-        LoginFormPage loginModel ->
-            case message of
-                    SaveLogin login ->
-                        ( LoginFormPage { loginModel | inputLogin = login }, Cmd.none )
+    case ( message, model ) of
+        ( LoginPageMessage subMessage, LoginFormPage subModel) ->
+            case subMessage of
+                SaveLogin login ->
+                    ( LoginFormPage { subModel | inputLogin = login }, Cmd.none )
 
-                    Login ->
-                        ( model, fetchPerson loginModel.inputLogin )
+                Login ->
+                    ( model, fetchPerson subModel.inputLogin )
 
-                    PersonReceived response ->
-                        case response of
-                            RemoteData.Success person ->
-                                ( RoundLoading { person = person, round = RemoteData.Loading }, fetchCurrentRound )
+                PersonReceived response ->
+                    case response of
+                        RemoteData.Success person ->
+                            ( RoundLoading { person = person, round = RemoteData.Loading }, fetchCurrentRound )
 
-                            _ ->
-                                ( LoginFormPage { loginModel | person = response }, Cmd.none )
+                        _ ->
+                            ( LoginFormPage { subModel | person = response }, Cmd.none )
 
-                    _ ->
-                        ( model, Cmd.none )
+        ( LoginPageMessage _, _ ) ->
+            ( model, Cmd.none )
 
-        RoundLoading roundLoadingModel ->
-            case message of
+        ( RoundLoadingPageMessage subMessage, RoundLoading subModel ) ->
+            case subMessage of
                 RoundReceived response ->
                     case response of
                         RemoteData.NotAsked ->
-                            ( RoundLoading roundLoadingModel, fetchCurrentRound )
+                            ( RoundLoading subModel, fetchCurrentRound )
 
                         RemoteData.Success round ->
                             case round.step of
                                 Recommendation ->
                                     ( RecommendationFormPage
-                                        { person = roundLoadingModel.person
+                                        { person = subModel.person
                                         , round = round
                                         , recommendation = RemoteData.Loading
                                         , inputRecommendation = ""
                                         }
-                                    , fetchRecommendation roundLoadingModel.person )
+                                    , fetchRecommendation subModel.person )
 
                                 WhoSawWhat ->
                                     ( RecommendationsChoosePage
-                                        { person = roundLoadingModel.person
+                                        { person = subModel.person
                                         , round = round
                                         , recommendations = RemoteData.Loading
                                         }
                                      , fetchRecommendations)
 
                         _ ->
-                            ( RoundLoading roundLoadingModel, Cmd.none )
+                            ( RoundLoading subModel, Cmd.none )
 
-                _ ->
-                    ( RoundLoading roundLoadingModel, Cmd.none )
+        ( RoundLoadingPageMessage _, _ ) ->
+            ( model, Cmd.none )
 
-        RecommendationFormPage recommendationModel ->
-            case message of
+        ( RecommendationPageMessage subMessage, RecommendationFormPage subModel ) ->
+            case subMessage of
                 SaveRecommendation recommendation ->
-                    ( RecommendationFormPage { recommendationModel | inputRecommendation = recommendation }, Cmd.none )
+                    ( RecommendationFormPage { subModel | inputRecommendation = recommendation }, Cmd.none )
 
                 SendRecommendation ->
-                    ( model, sendRecommendation ( recommendationModel.person, recommendationModel.inputRecommendation ) )
+                    ( model, sendRecommendation ( subModel.person, subModel.inputRecommendation ) )
 
                 RecommendationReceived response ->
                     case response of
@@ -356,25 +371,25 @@ update message model =
                                     { person | recommendation = Just recommendation }
                             in
                             ( RecommendationFormPage
-                                { recommendationModel | inputRecommendation = recommendation.title, person = updatePerson recommendationModel.person }
+                                { subModel | inputRecommendation = recommendation.title, person = updatePerson subModel.person }
                             , Cmd.none )
 
                         _ ->
-                            ( RecommendationFormPage recommendationModel, Cmd.none )
+                            ( RecommendationFormPage subModel, Cmd.none )
 
-                _ ->
-                    ( model, Cmd.none )
+        ( RecommendationPageMessage _, _ ) ->
+            ( model, Cmd.none )
 
-        RecommendationsChoosePage recommendationsChooseModel ->
-            case message of
+        ( RecommendationsChoosePageMessage subMessage, RecommendationsChoosePage subModel ) ->
+            case subMessage of
                 RecommendationsReceived response ->
-                    ( RecommendationsChoosePage { recommendationsChooseModel | recommendations = response }, Cmd.none )
+                    ( RecommendationsChoosePage { subModel | recommendations = response }, Cmd.none )
 
                 SaveChooseRecommendation recommendation answer ->
                     ( model, Cmd.none )
 
-                _ ->
-                    ( model, Cmd.none )
+        ( RecommendationsChoosePageMessage _, _ ) ->
+            ( model, Cmd.none )
 
 
 init : () -> ( Model, Cmd Message )
