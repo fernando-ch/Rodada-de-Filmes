@@ -1,5 +1,8 @@
-package com.camacho.rodadafilmes
+package com.camacho.rodadafilmes.recommendation
 
+import com.camacho.rodadafilmes.person.Person
+import com.camacho.rodadafilmes.recommendation.Recommendation
+import com.camacho.rodadafilmes.round.Round
 import org.springframework.data.jpa.repository.JpaRepository
 
 interface RecommendationRepository : JpaRepository<Recommendation, Int> {

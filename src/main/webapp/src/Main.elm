@@ -8,7 +8,16 @@ import Http
 import RemoteData exposing (WebData)
 import Person exposing (Person, personDecoder)
 import Round exposing (Round, Step(..), roundDecoder)
-import Recommendation exposing (Recommendation, NewRecommendation, recommendationDecoder, recommendationsDecoder, newRecommendationEncoder)
+import Recommendation exposing
+    ( Recommendation
+    , NewRecommendation
+    , recommendationDecoder
+    , newRecommendationEncoder
+    , RecommendationWithVisualization
+    , recommendationsWithVisualizationsDecoder
+    , RecommendationToChoose
+    , createRecommendationToChoose
+    )
 
 
 baseUrl : String
@@ -37,7 +46,7 @@ type alias RecommendationModel =
 
 
 type alias RecommendationsChooseModel =
-    { recommendations : WebData (List Recommendation)
+    { recommendations : WebData (List RecommendationToChoose)
     , person : Person
     , round : Round
     }
@@ -67,8 +76,9 @@ type RecommendationMessage
 
 
 type RecommendationsChooseMessage
-    = RecommendationsReceived (WebData (List Recommendation))
-    | SaveChooseRecommendation Recommendation String
+    = RecommendationsReceived (WebData (List RecommendationWithVisualization))
+    | SaveChooseRecommendation RecommendationToChoose String
+    | SendChooseRecommendations
 
 
 type Message
@@ -186,7 +196,10 @@ viewRecommendationsChoose model =
     div []
         [ case model.recommendations of
             RemoteData.Success recommendations ->
-                viewRecommendationsChooseTable recommendations model.person
+                div []
+                    [ viewRecommendationsChooseTable recommendations model.person
+                    , button [ onClick SendChooseRecommendations ] [ text "Enviar" ]
+                    ]
 
             RemoteData.Failure error ->
                 viewRecommendationsError error
@@ -199,7 +212,7 @@ viewRecommendationsChoose model =
         ]
 
 
-viewRecommendationsChooseTable : List Recommendation -> Person -> Html Message
+viewRecommendationsChooseTable : List RecommendationToChoose -> Person -> Html Message
 viewRecommendationsChooseTable recommendations person =
     table []
         [ thead []
@@ -212,7 +225,7 @@ viewRecommendationsChooseTable recommendations person =
         ]
 
 
-viewRecommendationChoose : Person -> Recommendation -> Html Message
+viewRecommendationChoose : Person -> RecommendationToChoose -> Html Message
 viewRecommendationChoose person recommendation =
     tr []
        [ td [] [ text recommendation.title ]
@@ -225,7 +238,7 @@ viewRecommendationChoose person recommendation =
        ]
 
 
-disableRadio : Recommendation -> Person -> Bool
+disableRadio : RecommendationToChoose -> Person -> Bool
 disableRadio recommendation person =
     case person.recommendation of
         Nothing ->
@@ -296,9 +309,17 @@ fetchRecommendations =
     Http.get
         { url = baseUrl ++ "recommendations"
         , expect =
-            recommendationsDecoder
+            recommendationsWithVisualizationsDecoder
                 |> Http.expectJson (RemoteData.fromResult >> RecommendationsReceived >> RecommendationsChoosePageMessage)
         }
+
+
+--sendChooseRecommendations : Cmd Message
+--sendChooseRecommendations =
+--    Http.get
+--        { url = baseUrl ++
+--
+--        }
 
 
 update : Message -> Model -> ( Model, Cmd Message )
@@ -383,10 +404,46 @@ update message model =
         ( RecommendationsChoosePageMessage subMessage, RecommendationsChoosePage subModel ) ->
             case subMessage of
                 RecommendationsReceived response ->
-                    ( RecommendationsChoosePage { subModel | recommendations = response }, Cmd.none )
+                    let
+                        mappedResponse =
+                            case response of
+                                RemoteData.Success recommendationsWithVisualization ->
+                                    let
+                                        recommendationsToChoose =
+                                            List.map (createRecommendationToChoose subModel.person) recommendationsWithVisualization
+                                    in
+                                    RemoteData.Success recommendationsToChoose
 
-                SaveChooseRecommendation recommendation answer ->
-                    ( model, Cmd.none )
+                                RemoteData.NotAsked ->
+                                    RemoteData.NotAsked
+
+                                RemoteData.Loading ->
+                                    RemoteData.Loading
+
+                                RemoteData.Failure e ->
+                                    RemoteData.Failure e
+                    in
+                    ( RecommendationsChoosePage { subModel | recommendations = mappedResponse }, Cmd.none )
+
+                SaveChooseRecommendation recommendationToUpdate answer ->
+                    case subModel.recommendations of
+                        RemoteData.Success recommendations ->
+                            let
+                                updateRecommendation recommendation =
+                                    if recommendation.id == recommendationToUpdate.id then
+                                        { recommendation | currentPersonSawItBeforeRound = (answer == "Sim") }
+
+                                    else
+                                        recommendation
+                            in
+                            ( RecommendationsChoosePage
+                                { subModel | recommendations = RemoteData.Success (List.map updateRecommendation recommendations)
+                                }
+                            , Cmd.none
+                            )
+
+                        _ ->
+                            ( model, Cmd.none )
 
         ( RecommendationsChoosePageMessage _, _ ) ->
             ( model, Cmd.none )

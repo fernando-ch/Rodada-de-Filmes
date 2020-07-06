@@ -1,4 +1,4 @@
-package com.camacho.rodadafilmes
+package com.camacho.rodadafilmes.person
 
 import org.springframework.data.jpa.repository.JpaRepository
 

@@ -1,5 +1,7 @@
-package com.camacho.rodadafilmes
+package com.camacho.rodadafilmes.round
 
+import com.camacho.rodadafilmes.person.PersonRepository
+import com.camacho.rodadafilmes.recommendation.RecommendationRepository
 import org.springframework.stereotype.Service
 
 @Service
@@ -8,7 +10,7 @@ class RoundService(
         private val personRepository: PersonRepository,
         private val recommendationRepository: RecommendationRepository
 ) {
-    fun findCurrentRound() = roundRepository.findByCurrent(true).first()
+    fun findCurrentRound() = roundRepository.findByCurrent(true)!!
 
     fun advanceToNextStep(round: Round) {
         val totalRecommendationsInRound = recommendationRepository.countAllByRound(round)
@@ -17,6 +19,7 @@ class RoundService(
         if (totalPeople == totalRecommendationsInRound) {
             round.goToNextSet()
             roundRepository.save(round)
+
         }
     }
 }

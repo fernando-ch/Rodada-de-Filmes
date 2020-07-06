@@ -1,6 +1,6 @@
-module Person exposing (Person, personDecoder)
+module Person exposing (Person, personDecoder, personsDecoder)
 
-import Json.Decode as Decode exposing (Decoder, int, string, nullable)
+import Json.Decode as Decode exposing (Decoder, int, string, nullable, list)
 import Json.Decode.Pipeline exposing (required)
 import Recommendation exposing (Recommendation, recommendationDecoder)
 
@@ -17,3 +17,8 @@ personDecoder =
         |> required "id" int
         |> required "name" string
         |> required "recommendation" (nullable recommendationDecoder)
+
+
+personsDecoder : Decoder (List Person)
+personsDecoder =
+    list personDecoder

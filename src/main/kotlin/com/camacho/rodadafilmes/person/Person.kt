@@ -1,4 +1,4 @@
-package com.camacho.rodadafilmes
+package com.camacho.rodadafilmes.person
 
 import javax.persistence.Entity
 import javax.persistence.Id
