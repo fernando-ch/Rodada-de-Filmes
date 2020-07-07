@@ -2,8 +2,8 @@ package com.camacho.rodadafilmes.recommendation
 
 import com.camacho.rodadafilmes.ErrorResponse
 import com.camacho.rodadafilmes.person.Person
-import com.camacho.rodadafilmes.round.RoundService
 import com.camacho.rodadafilmes.person.PersonRepository
+import com.camacho.rodadafilmes.round.RoundService
 import com.camacho.rodadafilmes.round.Step
 import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
@@ -36,9 +36,8 @@ class RecommendationController(
 
     @GetMapping
     fun findAll(): List<RecommendationDto> {
-        val currentRound = roundService.findCurrentRound()
         return recommendationVisualizationRepository
-                .findAllByRecommendationRound(currentRound)
+                .findAllByCurrentRound()
                 .groupBy { it.recommendation }
                 .map { (recommendation, visualizations) ->
                     RecommendationDto(
@@ -66,35 +65,45 @@ class RecommendationController(
     fun create(@RequestBody recommendationInputDto: RecommendationInputDto): ResponseEntity<Any> {
         val currentRound = roundService.findCurrentRound()
 
-        return if (currentRound.step != Step.RECOMMENDATION) {
-            ResponseEntity.badRequest().body("error" to "Não é possível criar ou editar recomendações depois que a etapa de recomendações acabou")
-        }
-        else {
-            val optional = personRepository.findById(recommendationInputDto.personId)
-
-            return if (!optional.isPresent) {
-                ResponseEntity.status(HttpStatus.UNAUTHORIZED).build()
+        return when {
+            currentRound.step != Step.RECOMMENDATION -> {
+                ResponseEntity.badRequest().body("error" to "Não é possível criar ou editar recomendações depois que a etapa de recomendações acabou")
             }
-            else {
-                val person = optional.get()
+            else -> {
+                val optional = personRepository.findById(recommendationInputDto.personId)
 
-                val recommendation = recommendationRepository.findByPersonAndRound(person, currentRound)
+                return when {
+                    !optional.isPresent -> {
+                        ResponseEntity.status(HttpStatus.UNAUTHORIZED).build()
+                    }
+                    else -> {
+                        val person = optional.get()
 
-                return if (recommendation == null) {
-                    val newRecommendation = Recommendation(
-                            title = recommendationInputDto.title,
-                            person = person,
-                            round = currentRound
-                    )
-                    recommendationRepository.save(newRecommendation)
-                    roundService.advanceToNextStep(currentRound);
-                    ResponseEntity.ok(newRecommendation)
-                }
-                else {
-                    recommendation.title = recommendationInputDto.title
-                    recommendationRepository.save(recommendation)
-                    roundService.advanceToNextStep(currentRound);
-                    ResponseEntity.ok(recommendation)
+                        return when (val recommendation = recommendationRepository.findByPersonAndRound(person, currentRound)) {
+                            null -> {
+                                val newRecommendation = Recommendation(
+                                        title = recommendationInputDto.title,
+                                        person = person,
+                                        round = currentRound
+                                )
+                                recommendationRepository.save(newRecommendation)
+                                roundService.advanceToNextStep(currentRound)
+                                recommendationVisualizationRepository.save(RecommendationVisualization(
+                                        recommendation = newRecommendation,
+                                        person = person,
+                                        alreadySawDuringRound = true,
+                                        alreadySawBeforeRound = true
+                                ))
+                                ResponseEntity.ok(newRecommendation)
+                            }
+                            else -> {
+                                recommendation.title = recommendationInputDto.title
+                                recommendationRepository.save(recommendation)
+                                roundService.advanceToNextStep(currentRound)
+                                ResponseEntity.ok(recommendation)
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -104,28 +113,30 @@ class RecommendationController(
     fun markWhatPersonAlreadySaw(@PathVariable personId: Int, @RequestBody recommendationsToChoose: List<RecommendationToChoose>): ResponseEntity<Any> {
         val optional = personRepository.findById(personId)
 
-        return if (!optional.isPresent) {
-            ResponseEntity.badRequest().body(ErrorResponse("Usuário não existe"))
-        }
-        else {
-            val person = optional.get()
-            val recommendations = recommendationRepository.findAllById(recommendationsToChoose.map { it.id })
-
-            val recommendationsVisualizations = recommendationsToChoose.map { recommendationToChoose ->
-                val recommendation = recommendations.find { it.id == recommendationToChoose.id }
-                        ?: return@markWhatPersonAlreadySaw ResponseEntity.badRequest().body(ErrorResponse("Não foi enviado dados para todas as recomendações"))
-
-                RecommendationVisualization(
-                        recommendation = recommendation,
-                        person = person,
-                        alreadySawBeforeRound = recommendationToChoose.currentPersonSawItBeforeRound,
-                        alreadySawDuringRound = recommendationToChoose.currentPersonSawItBeforeRound
-                )
+        return when {
+            !optional.isPresent -> {
+                ResponseEntity.badRequest().body(ErrorResponse("Usuário não existe"))
             }
+            else -> {
+                val person = optional.get()
+                val recommendations = recommendationRepository.findAllById(recommendationsToChoose.map { it.id })
 
-            recommendationVisualizationRepository.saveAll(recommendationsVisualizations)
+                val recommendationsVisualizations = recommendationsToChoose.map { recommendationToChoose ->
+                    val recommendation = recommendations.find { it.id == recommendationToChoose.id }
+                            ?: return@markWhatPersonAlreadySaw ResponseEntity.badRequest().body(ErrorResponse("Não foram enviados dados para todas as recomendações"))
 
-            ResponseEntity.ok().build()
+                    RecommendationVisualization(
+                            recommendation = recommendation,
+                            person = person,
+                            alreadySawBeforeRound = recommendationToChoose.currentPersonSawItBeforeRound,
+                            alreadySawDuringRound = recommendationToChoose.currentPersonSawItBeforeRound
+                    )
+                }
+
+                recommendationVisualizationRepository.saveAll(recommendationsVisualizations)
+
+                ResponseEntity.ok().build()
+            }
         }
     }
 }
