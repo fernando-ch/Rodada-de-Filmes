@@ -1,13 +1,13 @@
-module Person exposing (Person, personDecoder, personsDecoder)
+module Person exposing (Person, personDecoder)
 
-import Json.Decode as Decode exposing (Decoder, int, string, nullable, list)
+import Json.Decode as Decode exposing (Decoder, int, string, nullable)
 import Json.Decode.Pipeline exposing (required)
-import Recommendation exposing (Recommendation, recommendationDecoder)
+import Movie exposing (Movie, movieDecoder)
 
 type alias Person =
     { id : Int
     , name : String
-    , recommendation : Maybe Recommendation
+    , movie : Maybe Movie
     }
 
 
@@ -16,9 +16,4 @@ personDecoder =
     Decode.succeed Person
         |> required "id" int
         |> required "name" string
-        |> required "recommendation" (nullable recommendationDecoder)
-
-
-personsDecoder : Decoder (List Person)
-personsDecoder =
-    list personDecoder
+        |> required "recommendation" (nullable movieDecoder)
