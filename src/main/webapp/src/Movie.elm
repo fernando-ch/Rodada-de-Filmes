@@ -11,7 +11,6 @@ module Movie exposing
 import Json.Decode as Decode exposing (Decoder, int, string, list, bool)
 import Json.Decode.Pipeline exposing (required)
 import Json.Encode as Encode
-import Person exposing (Person)
 
 
 type alias Movie =
@@ -84,22 +83,22 @@ type alias MovieToChoose =
     }
 
 
-createMovieToChoose : Person -> MovieWithVisualization -> MovieToChoose
-createMovieToChoose person movieWithVisualization =
+createMovieToChoose : Int -> MovieWithVisualization -> MovieToChoose
+createMovieToChoose personId movieWithVisualization =
     { id = movieWithVisualization.id
     , title = movieWithVisualization.title
     , visualizations = movieWithVisualization.visualizations
-    , currentPersonSawItBeforeRound = personSawBeforeRound person movieWithVisualization
+    , currentPersonSawItBeforeRound = personSawBeforeRound personId movieWithVisualization
     }
 
 
-personSawBeforeRound : Person -> MovieWithVisualization -> Maybe Bool
-personSawBeforeRound person movieToChoose =
-    case List.filter (\visualization -> visualization.personId == person.id) movieToChoose.visualizations of
+personSawBeforeRound : Int -> MovieWithVisualization -> Maybe Bool
+personSawBeforeRound personId movieToChoose =
+    case List.filter (\visualization -> visualization.personId == personId) movieToChoose.visualizations of
         head::_ ->
             Just head.alreadySawBeforeRound
 
-        ( [] ) ->
+        [] ->
             Nothing
 
 

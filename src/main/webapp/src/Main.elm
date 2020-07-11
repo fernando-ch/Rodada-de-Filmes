@@ -54,6 +54,7 @@ type alias MoviesChooseModel =
     { movies : WebData (List MovieToChoose)
     , person : Person
     , round : Round
+    , success : Bool
     }
 
 
@@ -84,8 +85,27 @@ view model =
             LoginFormPage loginModel ->
                 viewLoginForm loginModel
 
-            RoundLoading _ ->
-                div [] []
+            RoundLoading subModel ->
+                case subModel.round of
+                    RemoteData.Failure error ->
+                        case error of
+                            Http.BadUrl string ->
+                                div [] [ text string]
+
+                            Http.Timeout ->
+                                div [] [ text "O servidor está demorando muito para responder" ]
+
+                            Http.NetworkError ->
+                                div [] [ text "Verifique sua internet. Se persistir os sintomas o administrador deve ser consultado."]
+
+                            Http.BadStatus status ->
+                                div [] [ text ("Erro status" ++ String.fromInt status) ]
+
+                            Http.BadBody string ->
+                                div [] [ text ("Erro " ++ string) ]
+
+                    _ ->
+                        div [] [ text "Carregando" ]
 
             RecommendationFormPage recommendationModel ->
                 viewRecommendationForm recommendationModel
@@ -122,11 +142,20 @@ viewLoginErrorOrNothing person =
                           Http.NetworkError ->
                               "Verifique sua internet. Se persistir os sintomas o administrador deve ser consultado."
 
-                          Http.BadStatus 404 ->
-                              "Login inválido. Digite seu nome com a primeira letra maiúscula."
+                          Http.BadStatus status ->
+                              case status of
+                                  404 ->
+                                    "Login inválido. Digite seu nome com a primeira letra maiúscula."
 
-                          _ ->
-                              "Ocorreu um erro inesperado"
+                                  _ ->
+                                      "Erro status " ++ String.fromInt status
+
+                          Http.BadUrl string ->
+                              "Url incorreta " ++ string
+
+                          Http.BadBody errorMessage ->
+                              "Erro: " ++ errorMessage
+
                     )
 
                 _  ->
@@ -142,22 +171,17 @@ viewRecommendationForm model =
               [ input [ id "input-recommendation"
                       , onInput SaveTitle
                       , type_ "text"
-                      , placeholder "Digite o do filme"
+                      , placeholder "Digite o título do filme"
+                      , value model.inputTitle
                       ] []
-              , viewRecommendationErrorOrNothing model
+              , viewMovieMessage model
               , button [] [ text "Enviar Recomendação" ]
               ]
-          , case model.movie of
-                RemoteData.Success _ ->
-                    span [] [ text "Sua recomendação foi enviada com sucesso" ]
-
-                _ ->
-                    span [] []
         ]
 
 
-viewRecommendationErrorOrNothing : RecommendationModel -> Html Message
-viewRecommendationErrorOrNothing model =
+viewMovieMessage : RecommendationModel -> Html Message
+viewMovieMessage model =
     let
         ( className, message ) =
             case model.movie of
@@ -170,8 +194,16 @@ viewRecommendationErrorOrNothing model =
                           Http.NetworkError ->
                               "Verifique sua internet. Se persistir os sintomas o administrador deve ser consultado."
 
-                          _ ->
-                              "Ocorreu um erro inesperado"
+
+                          Http.BadUrl string ->
+                              "Url incorreta " ++ string
+
+                          Http.BadStatus status ->
+                              "Erro status " ++ String.fromInt status
+
+                          Http.BadBody string ->
+                              "Body incorreto " ++ string
+
                     )
 
                 RemoteData.NotAsked ->
@@ -181,6 +213,9 @@ viewRecommendationErrorOrNothing model =
 
                          Nothing ->
                              ( "", "" )
+
+                RemoteData.Success _ ->
+                     ( "success", "Sua recomendação foi enviada com sucesso" )
 
                 _  ->
                     ( "", "" )
@@ -196,6 +231,13 @@ viewRecommendationsChoose model =
                 div []
                     [ viewRecommendationsChooseTable recommendations model.person
                     , button [ onClick SendChooseMovies ] [ text "Enviar" ]
+                    , span [ class "success" ]
+                           [ text (if model.success then
+                                "Suas respostas foram enviadas com sucesso"
+
+                             else
+                                "")
+                           ]
                     ]
 
             RemoteData.Failure error ->
@@ -217,30 +259,36 @@ viewRecommendationsChooseTable recommendations person =
                 , th [] []
                 ]
         , tbody []
-                [ List.map (viewRecommendationChoose person) recommendations
-                ]
+                (List.map (viewRecommendationChoose person) recommendations)
         ]
 
 
 viewRecommendationChoose : Person -> MovieToChoose -> Html Message
-viewRecommendationChoose person recommendation =
+viewRecommendationChoose person movie =
     tr []
-       [ td [] [ text recommendation.title ]
+       [ td [] [ text movie.title ]
        , td []
-            [ input [ type_ "radio"
-                    , name "answer"
-                    , disabled (recommendationFromOwnPerson recommendation person)
-                    , onInput (SaveChooseMovie recommendation)
-                    , checked (Maybe.withDefault False recommendation.currentPersonSawItBeforeRound)
+            [ label [ for ("inputYes" ++ String.fromInt movie.id) ] [ text "Já vi" ]
+            , input [ id ("inputYes" ++ String.fromInt movie.id)
+                    , type_ "radio"
+                    , name ("answer" ++ String.fromInt movie.id)
+                    , value "Sim"
+                    , disabled (recommendationFromOwnPerson movie person)
+                    , onInput (SaveChooseMovie movie)
+                    , checked (Maybe.withDefault False movie.currentPersonSawItBeforeRound)
                     ]
-                    [ text "Sim" ]
-            , input [ type_ "radio"
-                    , name "answer"
-                    , disabled (recommendationFromOwnPerson recommendation person)
-                    , onInput (SaveChooseMovie recommendation)
-                    , checked (Maybe.withDefault False (Maybe.map not recommendation.currentPersonSawItBeforeRound))
+                    []
+
+            , label [ for ("inputNo" ++ String.fromInt movie.id) ] [ text "Não vi" ]
+            , input [ id ("inputNo" ++ String.fromInt movie.id)
+                    , type_ "radio"
+                    , name ("answer" ++ String.fromInt movie.id)
+                    , value "Não"
+                    , disabled (recommendationFromOwnPerson movie person)
+                    , onInput (SaveChooseMovie movie)
+                    , checked (Maybe.withDefault False (Maybe.map not movie.currentPersonSawItBeforeRound))
                     ]
-                    [ text "Não" ]
+                    []
             ]
        ]
 
@@ -294,7 +342,7 @@ fetchCurrentRound =
 fetchMovie : Person -> Cmd Message
 fetchMovie person =
     Http.get
-        { url = movieUrl ++ "search/?personId=" ++ String.fromInt person.id
+        { url = movieUrl ++ "search?personId=" ++ String.fromInt person.id
         , expect =
             movieDecoder
                 |> Http.expectJson (RemoteData.fromResult >> MovieSaved)
@@ -368,9 +416,6 @@ update message model =
             case model of
                  RoundLoading subModel ->
                     case response of
-                        RemoteData.NotAsked ->
-                            ( RoundLoading subModel, fetchCurrentRound )
-
                         RemoteData.Success round ->
                             case round.step of
                                 Recommendation ->
@@ -378,9 +423,9 @@ update message model =
                                         { person = subModel.person
                                         , round = round
                                         , movie = RemoteData.Loading
-                                        , inputTitle = ""
+                                        , inputTitle = Maybe.withDefault "" (Maybe.map (\movie -> movie.title) subModel.person.movie)
                                         }
-                                    , fetchMovie subModel.person )
+                                    , Cmd.none )
 
                                 WhoSawWhat ->
                                     case subModel.person.movie of
@@ -399,6 +444,7 @@ update message model =
                                                     { person = subModel.person
                                                     , round = round
                                                     , movies = RemoteData.Loading
+                                                    , success = False
                                                     }
                                                  , fetchMovies)
 
@@ -411,7 +457,7 @@ update message model =
                                                  }
                                              , fetchMovie subModel.person )
                         _ ->
-                            ( RoundLoading subModel, Cmd.none )
+                            ( RoundLoading { subModel | round = response }, Cmd.none )
 
                  _ ->
                     ( model, Cmd.none )
@@ -436,15 +482,15 @@ update message model =
             case model of
                  RecommendationFormPage subModel ->
                     case response of
-                        RemoteData.Success recommendation ->
+                        RemoteData.Success movie ->
                             case subModel.round.step of
                                 Recommendation ->
                                     let
                                         updatePerson person =
-                                            { person | movie = Just recommendation }
+                                            { person | movie = Just movie }
                                     in
                                     ( RecommendationFormPage
-                                        { subModel | inputTitle = recommendation.title, person = updatePerson subModel.person }
+                                        { subModel | inputTitle = movie.title, person = updatePerson subModel.person, movie = response }
                                     , Cmd.none )
 
                                 WhoSawWhat ->
@@ -452,6 +498,7 @@ update message model =
                                        { person = subModel.person
                                        , round = subModel.round
                                        , movies = RemoteData.Loading
+                                       , success = False
                                        }
                                     , fetchMovies)
 
@@ -470,7 +517,7 @@ update message model =
                                 RemoteData.Success recommendationsWithVisualization ->
                                     let
                                         recommendationsToChoose =
-                                            List.map (createMovieToChoose subModel.person) recommendationsWithVisualization
+                                            List.map (createMovieToChoose subModel.person.id) recommendationsWithVisualization
                                     in
                                     RemoteData.Success recommendationsToChoose
 
@@ -526,8 +573,32 @@ update message model =
                  _ ->
                     ( model, Cmd.none )
 
-        ChooseMoviesSaved _ ->
-            ( model, Cmd.none )
+        ChooseMoviesSaved response ->
+            case model of
+                RecommendationsChoosePage subModel ->
+                    let
+                        mappedResponse =
+                            case response of
+                                RemoteData.Success recommendationsWithVisualization ->
+                                    let
+                                        recommendationsToChoose =
+                                            List.map (createMovieToChoose subModel.person.id) recommendationsWithVisualization
+                                    in
+                                    RemoteData.Success recommendationsToChoose
+
+                                RemoteData.NotAsked ->
+                                    RemoteData.NotAsked
+
+                                RemoteData.Loading ->
+                                    RemoteData.Loading
+
+                                RemoteData.Failure e ->
+                                    RemoteData.Failure e
+                    in
+                    ( RecommendationsChoosePage { subModel | movies = mappedResponse }, Cmd.none )
+
+                _ ->
+                    ( model, Cmd.none )
 
 
 init : () -> ( Model, Cmd Message )

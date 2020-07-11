@@ -16,4 +16,4 @@ personDecoder =
     Decode.succeed Person
         |> required "id" int
         |> required "name" string
-        |> required "recommendation" (nullable movieDecoder)
+        |> required "movie" (nullable movieDecoder)

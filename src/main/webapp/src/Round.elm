@@ -29,7 +29,7 @@ stepDecoder =
     Decode.string
         |> Decode.andThen (\str ->
            case str of
-                "Movie" ->
+                "Recommendation" ->
                     Decode.succeed Recommendation
                 "WhoSawWhat" ->
                     Decode.succeed WhoSawWhat
