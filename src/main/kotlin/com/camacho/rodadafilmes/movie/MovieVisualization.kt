@@ -1,17 +1,17 @@
-package com.camacho.rodadafilmes.recommendation
+package com.camacho.rodadafilmes.movie
 
 import com.camacho.rodadafilmes.person.Person
 import javax.persistence.*
 
-@Entity(name = "recommendations_visualizations")
-class RecommendationVisualization (
+@Entity(name = "movies_visualizations")
+class MovieVisualization (
         @field:Id
         @field:GeneratedValue(strategy = GenerationType.IDENTITY)
         val id: Int? = null,
         val alreadySawBeforeRound: Boolean,
         val alreadySawDuringRound: Boolean,
         @ManyToOne
-        val recommendation: Recommendation,
+        val movie: Movie,
         @ManyToOne
         val person: Person
 )

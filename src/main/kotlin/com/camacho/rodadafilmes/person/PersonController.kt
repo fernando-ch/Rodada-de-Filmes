@@ -1,7 +1,7 @@
 package com.camacho.rodadafilmes.person
 
-import com.camacho.rodadafilmes.recommendation.RecommendationRepository
-import com.camacho.rodadafilmes.recommendation.RecommendationVisualizationRepository
+import com.camacho.rodadafilmes.movie.MovieRepository
+import com.camacho.rodadafilmes.movie.MovieVisualizationRepository
 import com.camacho.rodadafilmes.round.RoundService
 import org.springframework.http.MediaType
 import org.springframework.http.ResponseEntity
@@ -14,13 +14,13 @@ import org.springframework.web.bind.annotation.RestController
 @RequestMapping("people", produces = [MediaType.APPLICATION_JSON_VALUE])
 class PersonController(
         private val personRepository: PersonRepository,
-        private val recommendationRepository: RecommendationRepository,
-        private val recommendationVisualizationRepository: RecommendationVisualizationRepository,
+        private val movieRepository: MovieRepository,
+        private val movieVisualizationRepository: MovieVisualizationRepository,
         private val roundService: RoundService
 ) {
 
-    data class PersonDto (val id: Int, val name: String, val recommendation: RecommendationDto?)
-    data class RecommendationDto (val id: Int, val title: String, val tooManyPeopleAlreadySaw: Boolean)
+    data class PersonDto (val id: Int, val name: String, val movie: MovieDto?)
+    data class MovieDto (val id: Int, val title: String, val tooManyPeopleAlreadySaw: Boolean)
 
     @GetMapping("{name}")
     fun findByName(@PathVariable name: String): ResponseEntity<PersonDto> {
@@ -28,10 +28,10 @@ class PersonController(
             null -> ResponseEntity.notFound().build()
             else -> {
                 val round = roundService.findCurrentRound()
-                val recommendation = recommendationRepository.findByPersonAndRound(person, round)
-                val recommendationDto = if (recommendation != null) {
-                    val totalVisualizationsBeforeRound = recommendationVisualizationRepository
-                            .countAllByRecommendationAndAlreadySawBeforeRound(recommendation, true)
+                val movie = movieRepository.findAllByPersonAndRound(person, round)
+                val movieDto = if (movie != null) {
+                    val totalVisualizationsBeforeRound = movieVisualizationRepository
+                            .countAllByMovieAndAlreadySawBeforeRound(movie, true)
 
                     val totalPeople = personRepository.count()
 
@@ -44,7 +44,7 @@ class PersonController(
                         }
                     }
 
-                    RecommendationDto(recommendation.id!!, recommendation.title, tooManyPeopleAlreadySaw)
+                    MovieDto(movie.id!!, movie.title, tooManyPeopleAlreadySaw)
                 } else {
                     null
                 }
@@ -52,7 +52,7 @@ class PersonController(
                 val personDto = PersonDto(
                         id = person.id!!,
                         name = person.name,
-                        recommendation = recommendationDto
+                        movie = movieDto
                 )
 
                 ResponseEntity.ok(personDto)

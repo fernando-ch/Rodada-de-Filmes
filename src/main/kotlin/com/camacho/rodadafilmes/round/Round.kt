@@ -13,7 +13,7 @@ class Round(
         @field:Enumerated(EnumType.STRING)
         var step: Step = Step.RECOMMENDATION
 ) {
-    fun goToNextSet() {
+    fun goToNextStep() {
         if (step == Step.RECOMMENDATION) {
             step = Step.WHO_SAW_WHAT
         }
