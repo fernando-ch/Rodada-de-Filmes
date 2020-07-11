@@ -20,7 +20,7 @@ class MovieController(
         private val movieVisualizationService: MovieVisualizationService
 ) {
 
-    data class MovieDto(
+    data class MovieWithVisualizationsDto(
             val id: Int,
             val title: String,
             val visualizations: List<VisualizationDto>
@@ -29,15 +29,14 @@ class MovieController(
     data class VisualizationDto(val alreadySawBeforeRound: Boolean, val personId: Int)
 
     @GetMapping
-    fun findAll(): List<MovieDto> {
-        return movieVisualizationRepository
+    fun findAll(): List<MovieWithVisualizationsDto> {
+        return movieRepository
                 .findAllByCurrentRound()
-                .groupBy { it.movie }
-                .map { (movie, visualizations) ->
-                    MovieDto(
+                .map { movie ->
+                    MovieWithVisualizationsDto(
                             id = movie.id!!,
                             title = movie.title,
-                            visualizations = visualizations.map { VisualizationDto(it.alreadySawBeforeRound, it.person.id!!) }
+                            visualizations = movie.movieVisualizations.map { VisualizationDto(it.alreadySawBeforeRound, it.person.id!!) }
                     )
                 }
     }
@@ -59,7 +58,7 @@ class MovieController(
         val currentRound = roundService.findCurrentRound()
 
         return when {
-            currentRound.step != Step.RECOMMENDATION -> {
+            currentRound.step != Step.Recommendation -> {
                 ResponseEntity.badRequest().body("error" to "Não é possível criar ou editar recomendações depois que a etapa de recomendações acabou")
             }
             else -> {
@@ -79,7 +78,7 @@ class MovieController(
         }
     }
 
-    @PutMapping("mark-what-person-already-saw/{personId}")
+    @PostMapping("mark-what-person-already-saw/{personId}")
     fun markWhatPersonAlreadySaw(@PathVariable personId: Int, @RequestBody moviesToChoose: List<MovieToChoose>): ResponseEntity<Any> {
         val optional = personRepository.findById(personId)
 

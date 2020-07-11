@@ -10,6 +10,6 @@ interface MovieRepository : JpaRepository<Movie, Int> {
     fun findByPersonIdAndRoundId(personId: Int, roundId: Int): Movie?
     fun countAllByRound(round: Round): Long
 
-    @Query("select movies from movies where round.current = true")
+    @Query("select m from movies m where m.round.current = true")
     fun findAllByCurrentRound(): List<Movie>
 }

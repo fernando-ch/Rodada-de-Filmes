@@ -1,5 +1,6 @@
 package com.camacho.rodadafilmes.person
 
+import com.camacho.rodadafilmes.movie.MovieDto
 import com.camacho.rodadafilmes.movie.MovieRepository
 import com.camacho.rodadafilmes.movie.MovieVisualizationRepository
 import com.camacho.rodadafilmes.round.RoundService
@@ -20,7 +21,6 @@ class PersonController(
 ) {
 
     data class PersonDto (val id: Int, val name: String, val movie: MovieDto?)
-    data class MovieDto (val id: Int, val title: String, val tooManyPeopleAlreadySaw: Boolean)
 
     @GetMapping("{name}")
     fun findByName(@PathVariable name: String): ResponseEntity<PersonDto> {
@@ -30,9 +30,7 @@ class PersonController(
                 val round = roundService.findCurrentRound()
                 val movie = movieRepository.findAllByPersonAndRound(person, round)
                 val movieDto = if (movie != null) {
-                    val totalVisualizationsBeforeRound = movieVisualizationRepository
-                            .countAllByMovieAndAlreadySawBeforeRound(movie, true)
-
+                    val totalVisualizationsBeforeRound = movie.movieVisualizations.count { it.alreadySawBeforeRound }
                     val totalPeople = personRepository.count()
 
                     val tooManyPeopleAlreadySaw = when {

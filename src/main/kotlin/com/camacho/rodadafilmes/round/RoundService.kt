@@ -14,16 +14,15 @@ class RoundService(
 
     fun advanceToNextStep(round: Round) {
         when (round.step) {
-            Step.RECOMMENDATION -> {
+            Step.Recommendation -> {
                 val totalRecommendationsInRound = movieRepository.countAllByRound(round)
                 val totalPeople = personRepository.count()
 
                 if (totalPeople == totalRecommendationsInRound) {
                     round.goToNextStep()
-                    roundRepository.save(round)
                 }
             }
-            Step.WHO_SAW_WHAT -> {
+            Step.WhoSawWhat -> {
                 val totalPeople = personRepository.count()
                 val movies = movieRepository.findAllByCurrentRound()
 
@@ -31,5 +30,7 @@ class RoundService(
                     round.goToNextStep()
             }
         }
+
+        roundRepository.save(round)
     }
 }

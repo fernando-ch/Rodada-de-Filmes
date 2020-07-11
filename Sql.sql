@@ -21,7 +21,7 @@ create TYPE round_step AS ENUM ('Recommendation', 'WhoSawWhat');
 create table rounds (
     id serial not null primary key,
     current boolean not null,
-    step round_step not null
+    step text not null
 );
 
 insert into rounds (current, step) values (true, 'Recommendation');
@@ -32,7 +32,7 @@ create table movies (
     round_id integer not null references rounds(id),
     title text not null unique,
 
-    unique (person_id, round_id),
+    unique (person_id, round_id)
 );
 
 create table movies_visualizations (

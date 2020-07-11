@@ -2,7 +2,7 @@ package com.camacho.rodadafilmes.round
 
 import javax.persistence.*
 
-enum class Step { RECOMMENDATION, WHO_SAW_WHAT }
+enum class Step { Recommendation, WhoSawWhat }
 
 @Entity(name = "rounds")
 class Round(
@@ -11,11 +11,11 @@ class Round(
         val id: Int? = null,
         val current: Boolean = true,
         @field:Enumerated(EnumType.STRING)
-        var step: Step = Step.RECOMMENDATION
+        var step: Step = Step.Recommendation
 ) {
     fun goToNextStep() {
-        if (step == Step.RECOMMENDATION) {
-            step = Step.WHO_SAW_WHAT
+        if (step == Step.Recommendation) {
+            step = Step.WhoSawWhat
         }
     }
 }
