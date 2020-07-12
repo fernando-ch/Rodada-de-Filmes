@@ -36,10 +36,7 @@ class Movie(
         fun isReadyToBeSeeing(totalPeople: Long): Boolean {
                 val totalVisualizationsBeforeRound = movieVisualizations.count { it.alreadySawBeforeRound }
 
-                val tooManyPeopleAlreadySaw = when {
-                        totalPeople % 2 == 0L -> totalVisualizationsBeforeRound > (totalPeople / 2)
-                        else -> totalVisualizationsBeforeRound > ((totalPeople / 2) - 1)
-                }
+                val tooManyPeopleAlreadySaw = totalVisualizationsBeforeRound > (totalPeople / 2)
 
                 val everyOneAnswered = movieVisualizations.size.toLong() == totalPeople
 

@@ -33,14 +33,7 @@ class PersonController(
                     val totalVisualizationsBeforeRound = movie.movieVisualizations.count { it.alreadySawBeforeRound }
                     val totalPeople = personRepository.count()
 
-                    val tooManyPeopleAlreadySaw = when {
-                        totalPeople % 2 == 0L -> {
-                            totalVisualizationsBeforeRound > (totalPeople / 2)
-                        }
-                        else -> {
-                            totalVisualizationsBeforeRound > ((totalPeople / 2) - 1)
-                        }
-                    }
+                    val tooManyPeopleAlreadySaw = totalVisualizationsBeforeRound > (totalPeople / 2)
 
                     MovieDto(movie.id!!, movie.title, tooManyPeopleAlreadySaw)
                 } else {
