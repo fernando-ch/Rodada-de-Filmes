@@ -8,17 +8,7 @@ import Http
 import RemoteData exposing (WebData)
 import Person exposing (Person, personDecoder)
 import Round exposing (Round, Step(..), roundDecoder)
-import Movie exposing
-    ( Movie
-    , NewMovie
-    , movieDecoder
-    , newMovieEncoder
-    , MovieWithVisualization
-    , moviesWithVisualizationsDecoder
-    , MovieToChoose
-    , createMovieToChoose
-    , moviesToChooseEncoder
-    )
+import Movie exposing (Movie, MovieToChoose, MovieWithVisualization, NewMovie, createMovieToChoose, movieDecoder, moviesToChooseEncoder, moviesToSeeDecoder, moviesWithVisualizationsDecoder, newMovieEncoder)
 
 
 baseUrl : String
@@ -42,7 +32,7 @@ type alias RoundLoadingModel =
     }
 
 
-type alias RecommendationModel =
+type alias MovieFormModel =
     { inputTitle : String
     , person : Person
     , round : Round
@@ -58,11 +48,19 @@ type alias MoviesChooseModel =
     }
 
 
+type alias MoviesToSeeModel =
+    { movies : WebData (List Movie)
+    , person : Person
+    , round : Round
+    }
+
+
 type Model
     = LoginFormPage LoginModel
     | RoundLoading RoundLoadingModel
-    | RecommendationFormPage RecommendationModel
-    | RecommendationsChoosePage MoviesChooseModel
+    | MovieFormPage MovieFormModel
+    | MoviesChoosePage MoviesChooseModel
+    | MovieWatchingPage MoviesToSeeModel
 
 
 type Message
@@ -77,6 +75,7 @@ type Message
     | SaveChooseMovie MovieToChoose String
     | SendChooseMovies
     | ChooseMoviesSaved (WebData (List MovieWithVisualization))
+    | MoviesToSeeReceived (WebData (List Movie))
 
 view : Model -> Html Message
 view model =
@@ -107,11 +106,14 @@ view model =
                     _ ->
                         div [] [ text "Carregando" ]
 
-            RecommendationFormPage recommendationModel ->
+            MovieFormPage recommendationModel ->
                 viewRecommendationForm recommendationModel
 
-            RecommendationsChoosePage recommendationChooseModel ->
+            MoviesChoosePage recommendationChooseModel ->
                 viewRecommendationsChoose recommendationChooseModel
+
+            MovieWatchingPage moviesToSeeModel ->
+                viewMovieWatchingPage moviesToSeeModel
         ]
 
 
@@ -164,7 +166,7 @@ viewLoginErrorOrNothing person =
     span [ class className ] [ text message ]
 
 
-viewRecommendationForm : RecommendationModel -> Html Message
+viewRecommendationForm : MovieFormModel -> Html Message
 viewRecommendationForm model =
     div []
         [ Html.form [ id "form-recommendation", onSubmit SendMovie ]
@@ -180,7 +182,7 @@ viewRecommendationForm model =
         ]
 
 
-viewMovieMessage : RecommendationModel -> Html Message
+viewMovieMessage : MovieFormModel -> Html Message
 viewMovieMessage model =
     let
         ( className, message ) =
@@ -314,10 +316,49 @@ viewRecommendationsError error =
                 Http.NetworkError ->
                     "Verifique sua internet. Se persistir os sintomas o administrador deve ser consultado."
 
-                _ ->
-                    "Ocorreu um erro inesperado"
+                Http.BadUrl string ->
+                    "Url incorreta " ++ string
+
+                Http.BadStatus int ->
+                    "Erro status " ++ String.fromInt int
+
+                Http.BadBody string ->
+                    "Body incorreto " ++ string
+
+
     in
     span [ class "error" ] [ text errorMessage ]
+
+
+viewMovieWatchingPage : MoviesToSeeModel -> Html Message
+viewMovieWatchingPage model =
+    div []
+        [ case model.movies of
+            RemoteData.Success movies ->
+                div []
+                    [ viewMoviesToSeeTable movies
+                    ]
+
+            RemoteData.Failure error ->
+                viewRecommendationsError error
+
+            RemoteData.Loading ->
+                span [] [ text "Carregando recommendações" ]
+
+            RemoteData.NotAsked ->
+                span [] []
+        ]
+
+
+viewMoviesToSeeTable : List Movie -> Html Message
+viewMoviesToSeeTable movies =
+    table []
+        [ thead []
+                [ th [] [ text "Título" ]
+                ]
+        , tbody []
+                (List.map (\movie -> tr [] [ td [] [ text movie.title ] ]) movies)
+        ]
 
 
 fetchPerson : String -> Cmd Message
@@ -380,6 +421,16 @@ sendChooseMovies moviesToChoose person =
         }
 
 
+fetchMoviesToSee : Cmd Message
+fetchMoviesToSee =
+    Http.get
+        { url = movieUrl ++ "to-see"
+        , expect =
+            moviesToSeeDecoder
+                |> Http.expectJson (RemoteData.fromResult >> MoviesToSeeReceived)
+        }
+
+
 update : Message -> Model -> ( Model, Cmd Message )
 update message model =
     case message of
@@ -419,7 +470,7 @@ update message model =
                         RemoteData.Success round ->
                             case round.step of
                                 Recommendation ->
-                                    ( RecommendationFormPage
+                                    ( MovieFormPage
                                         { person = subModel.person
                                         , round = round
                                         , movie = RemoteData.Loading
@@ -431,16 +482,16 @@ update message model =
                                     case subModel.person.movie of
                                         Just recommendation ->
                                             if recommendation.tooManyPeopleAlreadySaw then
-                                                ( RecommendationFormPage
+                                                ( MovieFormPage
                                                     { person = subModel.person
                                                     , round = round
-                                                    , movie = RemoteData.Loading
+                                                    , movie = RemoteData.NotAsked
                                                     , inputTitle = ""
                                                     }
-                                                , fetchMovie subModel.person )
+                                                , Cmd.none )
 
                                             else
-                                                ( RecommendationsChoosePage
+                                                ( MoviesChoosePage
                                                     { person = subModel.person
                                                     , round = round
                                                     , movies = RemoteData.Loading
@@ -449,13 +500,23 @@ update message model =
                                                  , fetchMovies)
 
                                         Nothing ->
-                                             ( RecommendationFormPage
+                                             ( MovieFormPage
                                                  { person = subModel.person
                                                  , round = round
                                                  , movie = RemoteData.Loading
                                                  , inputTitle = ""
                                                  }
                                              , fetchMovie subModel.person )
+
+                                Watching ->
+                                    ( MovieWatchingPage
+                                        { movies = RemoteData.Loading
+                                        , person = subModel.person
+                                        , round = round
+                                        }
+                                     , fetchMoviesToSee
+                                     )
+
                         _ ->
                             ( RoundLoading { subModel | round = response }, Cmd.none )
 
@@ -464,15 +525,15 @@ update message model =
 
         SaveTitle title ->
             case model of
-                 RecommendationFormPage subModel ->
-                    ( RecommendationFormPage { subModel | inputTitle = title }, Cmd.none )
+                 MovieFormPage subModel ->
+                    ( MovieFormPage { subModel | inputTitle = title }, Cmd.none )
 
                  _ ->
                     ( model, Cmd.none )
 
         SendMovie ->
             case model of
-                 RecommendationFormPage subModel ->
+                 MovieFormPage subModel ->
                     ( model, sendMovie ( subModel.person, subModel.inputTitle ) )
 
                  _ ->
@@ -480,7 +541,7 @@ update message model =
 
         MovieSaved response ->
             case model of
-                 RecommendationFormPage subModel ->
+                 MovieFormPage subModel ->
                     case response of
                         RemoteData.Success movie ->
                             case subModel.round.step of
@@ -489,12 +550,12 @@ update message model =
                                         updatePerson person =
                                             { person | movie = Just movie }
                                     in
-                                    ( RecommendationFormPage
+                                    ( MovieFormPage
                                         { subModel | inputTitle = movie.title, person = updatePerson subModel.person, movie = response }
                                     , Cmd.none )
 
                                 WhoSawWhat ->
-                                    ( RecommendationsChoosePage
+                                    ( MoviesChoosePage
                                        { person = subModel.person
                                        , round = subModel.round
                                        , movies = RemoteData.Loading
@@ -502,15 +563,18 @@ update message model =
                                        }
                                     , fetchMovies)
 
+                                Watching ->
+                                    ( model, Cmd.none )
+
                         _ ->
-                            ( RecommendationFormPage { subModel | movie = response }, Cmd.none )
+                            ( MovieFormPage { subModel | movie = response }, Cmd.none )
 
                  _ ->
                     ( model, Cmd.none )
 
         MoviesReceived response ->
             case model of
-                RecommendationsChoosePage subModel ->
+                MoviesChoosePage subModel ->
                     let
                         mappedResponse =
                             case response of
@@ -530,14 +594,14 @@ update message model =
                                 RemoteData.Failure e ->
                                     RemoteData.Failure e
                     in
-                    ( RecommendationsChoosePage { subModel | movies = mappedResponse }, Cmd.none )
+                    ( MoviesChoosePage { subModel | movies = mappedResponse }, Cmd.none )
 
                 _ ->
                    ( model, Cmd.none )
 
         SaveChooseMovie movieToUpdate answer ->
             case model of
-                 RecommendationsChoosePage subModel ->
+                 MoviesChoosePage subModel ->
                      case subModel.movies of
                          RemoteData.Success recommendations ->
                              let
@@ -548,7 +612,7 @@ update message model =
                                      else
                                          recommendation
                              in
-                             ( RecommendationsChoosePage
+                             ( MoviesChoosePage
                                  { subModel | movies = RemoteData.Success (List.map updateRecommendation recommendations)
                                  }
                              , Cmd.none
@@ -562,10 +626,10 @@ update message model =
 
         SendChooseMovies ->
             case model of
-                 RecommendationsChoosePage subModel ->
+                 MoviesChoosePage subModel ->
                      case subModel.movies of
                          RemoteData.Success recommendations ->
-                            ( model, sendChooseMovies recommendations subModel.person )
+                            ( MoviesChoosePage { subModel | success = False }, sendChooseMovies recommendations subModel.person )
 
                          _ ->
                             ( model, Cmd.none )
@@ -575,27 +639,35 @@ update message model =
 
         ChooseMoviesSaved response ->
             case model of
-                RecommendationsChoosePage subModel ->
+                MoviesChoosePage subModel ->
                     let
-                        mappedResponse =
+                        ( mappedResponse, success ) =
                             case response of
                                 RemoteData.Success recommendationsWithVisualization ->
                                     let
                                         recommendationsToChoose =
                                             List.map (createMovieToChoose subModel.person.id) recommendationsWithVisualization
                                     in
-                                    RemoteData.Success recommendationsToChoose
+                                    ( RemoteData.Success recommendationsToChoose, True )
 
                                 RemoteData.NotAsked ->
-                                    RemoteData.NotAsked
+                                    ( RemoteData.NotAsked, False )
 
                                 RemoteData.Loading ->
-                                    RemoteData.Loading
+                                    ( RemoteData.Loading, False )
 
                                 RemoteData.Failure e ->
-                                    RemoteData.Failure e
+                                    ( RemoteData.Failure e, False )
                     in
-                    ( RecommendationsChoosePage { subModel | movies = mappedResponse }, Cmd.none )
+                    ( MoviesChoosePage { subModel | movies = mappedResponse, success = success }, Cmd.none )
+
+                _ ->
+                    ( model, Cmd.none )
+
+        MoviesToSeeReceived webData ->
+            case model of
+                MovieWatchingPage subModel ->
+                    ( MovieWatchingPage { subModel | movies = webData }, Cmd.none )
 
                 _ ->
                     ( model, Cmd.none )

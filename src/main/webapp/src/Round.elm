@@ -22,6 +22,7 @@ roundDecoder =
 type Step
     = Recommendation
     | WhoSawWhat
+    | Watching
 
 
 stepDecoder : Decoder Step
@@ -31,8 +32,13 @@ stepDecoder =
            case str of
                 "Recommendation" ->
                     Decode.succeed Recommendation
+
                 "WhoSawWhat" ->
                     Decode.succeed WhoSawWhat
+
+                "Watching" ->
+                    Decode.succeed Watching
+
                 somethingElse ->
                     Decode.fail <| "Etapa da rodada desconhecida: " ++ somethingElse
         )

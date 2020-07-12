@@ -6,7 +6,7 @@ module Movie exposing
     , MovieWithVisualization
     , moviesWithVisualizationsDecoder
     , MovieToChoose
-    , createMovieToChoose, moviesToChooseEncoder, Visualization)
+    , createMovieToChoose, moviesToChooseEncoder, Visualization, moviesToSeeDecoder)
 
 import Json.Decode as Decode exposing (Decoder, int, string, list, bool)
 import Json.Decode.Pipeline exposing (required)
@@ -119,3 +119,8 @@ maybe encoder =
 moviesToChooseEncoder : List MovieToChoose -> Encode.Value
 moviesToChooseEncoder moviesToChooses =
     Encode.list movieToChooseEncoder moviesToChooses
+
+
+moviesToSeeDecoder : Decoder (List Movie)
+moviesToSeeDecoder =
+    (list movieDecoder)
