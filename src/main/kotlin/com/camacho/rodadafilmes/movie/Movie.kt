@@ -10,7 +10,7 @@ class Movie(
         @field:GeneratedValue(strategy = GenerationType.IDENTITY)
         val id: Int? = null,
         var title: String,
-        val order: Int,
+        val watchOrder: Int,
         @ManyToOne
         val round: Round,
         @ManyToOne

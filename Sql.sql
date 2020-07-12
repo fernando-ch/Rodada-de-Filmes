@@ -31,7 +31,7 @@ create table movies (
     person_id integer not null references people(id),
     round_id integer not null references rounds(id),
     title text not null unique,
-    "order" integer not null,
+    watch_order integer not null,
 
     unique (person_id, round_id)
 );

@@ -44,7 +44,7 @@ class MovieController(
     fun findAllToSee(): List<MovieDto> {
         return movieRepository
                 .findAllByCurrentRound()
-                .sortedBy { it.order }
+                .sortedBy { it.watchOrder }
                 .map { movie ->
                     MovieDto(
                             id = movie.id!!,

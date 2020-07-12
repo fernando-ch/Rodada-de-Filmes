@@ -47,7 +47,7 @@ class MovieService(
                 title = movieInputDto.title,
                 person = person,
                 round = currentRound,
-                order = random.nextInt(1000)
+                watchOrder = random.nextInt(1000)
         )
         movieRepository.save(newRecommendation)
         movieVisualizationRepository.save(MovieVisualization(
