@@ -16,7 +16,7 @@ insert into people values (5, 'Vitor');
 insert into people values (6, 'Thayanne');
 insert into people values (7, 'Lucas');
 
-create TYPE round_step AS ENUM ('Recommendation', 'WhoSawWhat');
+-- create TYPE round_step AS ENUM ('Recommendation', 'WhoSawWhat');
 
 create table rounds (
     id serial not null primary key,
@@ -31,6 +31,7 @@ create table movies (
     person_id integer not null references people(id),
     round_id integer not null references rounds(id),
     title text not null unique,
+    "order" integer not null,
 
     unique (person_id, round_id)
 );
@@ -43,7 +44,7 @@ create table movies_visualizations (
     already_saw_during_round    boolean not null,
 
     unique (movie_id, person_id)
-)
+);
 
 -- insert into recommendations (person_id, round_id, title) values (2, 1, 'Corra');
 -- insert into recommendations (person_id, round_id, title) values (3, 1, 'Exterminador');

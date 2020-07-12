@@ -6,9 +6,12 @@ import com.camacho.rodadafilmes.round.Round
 import com.camacho.rodadafilmes.round.RoundService
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+import kotlin.random.Random
 
 data class MovieInputDto(val personId: Int, val title: String)
 data class MovieDto (val id: Int, val title: String, val tooManyPeopleAlreadySaw: Boolean)
+
+private val random = Random
 
 @Service
 class MovieService(
@@ -50,7 +53,8 @@ class MovieService(
         val newRecommendation = Movie(
                 title = movieInputDto.title,
                 person = person,
-                round = currentRound
+                round = currentRound,
+                order = random.nextInt(1000)
         )
         movieRepository.save(newRecommendation)
         movieVisualizationRepository.save(MovieVisualization(

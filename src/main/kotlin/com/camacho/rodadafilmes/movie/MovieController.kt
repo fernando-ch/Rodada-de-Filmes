@@ -3,7 +3,6 @@ package com.camacho.rodadafilmes.movie
 import com.camacho.rodadafilmes.ErrorResponse
 import com.camacho.rodadafilmes.person.PersonRepository
 import com.camacho.rodadafilmes.round.RoundService
-import com.camacho.rodadafilmes.round.Step
 import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
 import org.springframework.http.ResponseEntity
@@ -41,12 +40,31 @@ class MovieController(
                 }
     }
 
+    @GetMapping("to-see")
+    fun findAllToSee(): List<MovieDto> {
+        return movieRepository
+                .findAllByCurrentRound()
+                .sortedBy { it.order }
+                .map { movie ->
+                    MovieDto(
+                            id = movie.id!!,
+                            title = movie.title,
+                            tooManyPeopleAlreadySaw = false
+                    )
+                }
+    }
+
     @GetMapping("search")
     fun findByPerson(@RequestParam personId: Int): ResponseEntity<Any> {
         val currentRound = roundService.findCurrentRound()
         val movie = movieRepository.findByPersonIdAndRoundId(personId, currentRound.id!!)
 
         return if (movie != null) {
+            MovieWithVisualizationsDto(
+                    id = movie.id!!,
+                    title = movie.title,
+                    visualizations = movie.movieVisualizations.map { VisualizationDto(alreadySawBeforeRound = it.alreadySawBeforeRound, personId = it.person.id!!) }
+            )
             ResponseEntity.ok(movie)
         } else {
             ResponseEntity.notFound().build()
@@ -56,24 +74,16 @@ class MovieController(
     @PostMapping
     fun create(@RequestBody movieInputDto: MovieInputDto): ResponseEntity<Any> {
         val currentRound = roundService.findCurrentRound()
+        val optional = personRepository.findById(movieInputDto.personId)
 
         return when {
-            currentRound.step != Step.Recommendation -> {
-                ResponseEntity.badRequest().body("error" to "Não é possível criar ou editar recomendações depois que a etapa de recomendações acabou")
+            !optional.isPresent -> {
+                ResponseEntity.status(HttpStatus.UNAUTHORIZED).build()
             }
             else -> {
-                val optional = personRepository.findById(movieInputDto.personId)
-
-                return when {
-                    !optional.isPresent -> {
-                        ResponseEntity.status(HttpStatus.UNAUTHORIZED).build()
-                    }
-                    else -> {
-                        val person = optional.get()
-                        val movie = movieService.saveRecommendation(movieInputDto, person, currentRound)
-                        ResponseEntity.ok(movie)
-                    }
-                }
+                val person = optional.get()
+                val movie = movieService.saveRecommendation(movieInputDto, person, currentRound)
+                ResponseEntity.ok(movie)
             }
         }
     }
@@ -88,8 +98,18 @@ class MovieController(
             }
             else -> {
                 val person = optional.get()
-                movieVisualizationService.createVisualizations(person, moviesToChoose)
-                ResponseEntity.ok().build()
+                val visualizations = movieVisualizationService
+                        .createVisualizations(person, moviesToChoose)
+                        .groupBy { it.movie }
+                        .map { (movie, visualizations) ->
+                            MovieWithVisualizationsDto(
+                                    id = movie.id!!,
+                                    title = movie.title,
+                                    visualizations = visualizations.map { VisualizationDto(it.alreadySawBeforeRound, it.person.id!!) }
+                            )
+                        }
+
+                ResponseEntity.ok().body(visualizations)
             }
         }
     }

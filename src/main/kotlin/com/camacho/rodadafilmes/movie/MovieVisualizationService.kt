@@ -20,14 +20,16 @@ class MovieVisualizationService(
 ) {
 
     @Transactional
-    fun createVisualizations(person: Person, moviesToChoose: List<MovieToChoose>) {
+    fun createVisualizations(person: Person, moviesToChoose: List<MovieToChoose>): List<MovieVisualization> {
         val movies = movieRepository.findAllByCurrentRound()
         val moviesVisualizations = mutableListOf<MovieVisualization>()
 
         if (!moviesToChoose.map { it.id }.containsAll(movies.map { it.id }))
             throw MovieException("Não foram enviados dados para todas as recomendações")
 
-        movieVisualizationRepository.deleteAllByPersonAndCurrentRound(person)
+        movieVisualizationRepository.deleteAll(movieVisualizationRepository.findAllByPersonAndCurrentRound(person))
+
+        movieVisualizationRepository.flush()
 
         moviesToChoose.forEach { movieToChoose ->
             val movie = movies.find { it.id == movieToChoose.id }
@@ -47,5 +49,7 @@ class MovieVisualizationService(
 
         val currentRound = roundService.findCurrentRound()
         roundService.advanceToNextStep(currentRound)
+
+        return moviesVisualizations
     }
 }
