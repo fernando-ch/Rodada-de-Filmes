@@ -5384,7 +5384,7 @@ var $author$project$Movie$createMovieToChoose = F2(
 var $author$project$Main$RoundReceived = function (a) {
 	return {$: 3, a: a};
 };
-var $author$project$Main$baseUrl = 'http://localhost:8080/';
+var $author$project$Main$baseUrl = '';
 var $elm$core$Basics$composeR = F3(
 	function (f, g, x) {
 		return g(

@@ -13,7 +13,8 @@ import Movie exposing (Movie, MovieToChoose, MovieWithVisualization, NewMovie, c
 
 baseUrl : String
 baseUrl =
-    "http://localhost:8080/"
+    ""
+    --"http://localhost:8080/"
 
 
 movieUrl =
