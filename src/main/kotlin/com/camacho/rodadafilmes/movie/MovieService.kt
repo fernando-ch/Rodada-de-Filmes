@@ -1,15 +1,15 @@
 package com.camacho.rodadafilmes.movie
 
+import com.camacho.rodadafilmes.movieVisualization.MovieVisualization
+import com.camacho.rodadafilmes.movieVisualization.MovieVisualizationRepository
 import com.camacho.rodadafilmes.person.Person
-import com.camacho.rodadafilmes.person.PersonRepository
-import com.camacho.rodadafilmes.round.Round
 import com.camacho.rodadafilmes.round.RoundService
+import org.springframework.data.repository.findByIdOrNull
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import kotlin.random.Random
 
-data class MovieInputDto(val personId: Int, val title: String)
-data class MovieDto (val id: Int, val title: String, val tooManyPeopleAlreadySaw: Boolean)
+data class MovieDto(val title: String, val person: Person)
 
 private val random = Random
 
@@ -17,63 +17,58 @@ private val random = Random
 class MovieService(
         private val movieRepository: MovieRepository,
         private val movieVisualizationRepository: MovieVisualizationRepository,
-        private val roundService: RoundService,
-        private val personRepository: PersonRepository
+        private val roundService: RoundService
 ) {
     @Transactional
-    fun saveRecommendation(movieInputDto: MovieInputDto, person: Person, currentRound: Round): MovieDto {
-        val movie: Movie = when (val movie = movieRepository.findAllByPersonAndRound(person, currentRound)) {
-            null -> {
-                createRecommendation(movieInputDto, person, currentRound)
-            }
-            else -> {
-                updateRecommendation(movieInputDto, movie)
-            }
-        }
+    fun createRecommendation(movieDto: MovieDto): Movie {
+        val currentRound = roundService.findCurrentRound()!!
 
-        roundService.advanceToNextStep(currentRound)
-
-        val totalVisualizationsBeforeRound = movie.movieVisualizations.count { it.alreadySawBeforeRound }
-
-        val totalPeople = personRepository.count()
-
-        val tooManyPeopleAlreadySaw = totalVisualizationsBeforeRound > (totalPeople / 2)
-
-        return MovieDto(movie.id!!, movie.title, tooManyPeopleAlreadySaw)
-    }
-
-    private fun createRecommendation(movieInputDto: MovieInputDto, person: Person, currentRound: Round): Movie {
         val newRecommendation = Movie(
-                title = movieInputDto.title,
-                person = person,
+                title = movieDto.title,
+                person = movieDto.person,
                 round = currentRound,
                 watchOrder = random.nextInt(1000)
         )
+
         movieRepository.save(newRecommendation)
-        movieVisualizationRepository.save(MovieVisualization(
+
+        val visualization = MovieVisualization(
                 movie = newRecommendation,
-                person = person,
+                person = movieDto.person,
                 alreadySawDuringRound = true,
                 alreadySawBeforeRound = true
-        ))
+        )
 
+        movieVisualizationRepository.save(visualization)
+
+        newRecommendation.movieVisualizations.add(visualization)
+        roundService.advanceToNextStep(currentRound)
         return newRecommendation
     }
 
-    private fun updateRecommendation(movieInputDto: MovieInputDto, movie: Movie): Movie {
-        movie.title = movieInputDto.title
+    @Transactional
+    fun updateRecommendation(movieId: Int, movieDto: MovieDto): Movie {
+        val movie = movieRepository.findByIdOrNull(movieId)!!
+        movie.title = movieDto.title
         movieRepository.save(movie)
 
-        movieVisualizationRepository.deleteAllByMovie(movie)
+        movieVisualizationRepository.deleteAll(movie.movieVisualizations)
         movieVisualizationRepository.flush()
 
-        movieVisualizationRepository.save(MovieVisualization(
+        val visualization = MovieVisualization(
                 movie = movie,
                 person = movie.person,
                 alreadySawDuringRound = true,
                 alreadySawBeforeRound = true
-        ))
+        )
 
+        movieVisualizationRepository.save(visualization)
+
+        movie.movieVisualizations.clear()
+        movie.movieVisualizations.add(visualization)
+
+        movieRepository.save(movie)
+        roundService.advanceToNextStep(movie.round)
         return movie
     }
 }
