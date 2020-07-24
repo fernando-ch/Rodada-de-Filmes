@@ -2,12 +2,16 @@ module Round exposing (Round, Step(..), roundDecoder)
 
 import Json.Decode as Decode exposing (Decoder, int, bool)
 import Json.Decode.Pipeline exposing (required)
+import Movie exposing (Movie, moviesDecoder)
+import Person exposing (Person)
 
 
 type alias Round =
     { id : Int
     , current : Bool
     , step : Step
+    , movies : List Movie
+    , totalPeople : Int
     }
 
 
@@ -17,6 +21,7 @@ roundDecoder =
         |> required "id" int
         |> required "current" bool
         |> required "step" stepDecoder
+        |> required "movies" moviesDecoder
 
 
 type Step
@@ -42,3 +47,5 @@ stepDecoder =
                 somethingElse ->
                     Decode.fail <| "Etapa da rodada desconhecida: " ++ somethingElse
         )
+
+
