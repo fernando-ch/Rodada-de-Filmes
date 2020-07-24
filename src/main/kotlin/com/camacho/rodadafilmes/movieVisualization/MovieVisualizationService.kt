@@ -5,7 +5,6 @@ import com.camacho.rodadafilmes.person.Person
 import com.camacho.rodadafilmes.round.RoundService
 import org.springframework.data.repository.findByIdOrNull
 import org.springframework.stereotype.Service
-import org.springframework.transaction.annotation.Transactional
 
 data class MovieVisualizationDto(
         val alreadySawBeforeRound: Boolean,
@@ -21,7 +20,6 @@ class MovieVisualizationService(
         private val roundService: RoundService
 ) {
 
-    @Transactional
     fun createVisualization(visualizationDto: MovieVisualizationDto): MovieVisualization {
         val movie = movieRepository.findByIdOrNull(visualizationDto.movieId)!!
         val movieVisualization = movieVisualizationRepository.save(MovieVisualization(
@@ -36,7 +34,6 @@ class MovieVisualizationService(
         return movieVisualization
     }
 
-    @Transactional
     fun updateVisualization(visualizationId: Int, visualizationDto: MovieVisualizationDto): MovieVisualization {
         val visualization = movieVisualizationRepository.findByIdOrNull(visualizationId)!!
         visualization.alreadySawBeforeRound = visualizationDto.alreadySawBeforeRound

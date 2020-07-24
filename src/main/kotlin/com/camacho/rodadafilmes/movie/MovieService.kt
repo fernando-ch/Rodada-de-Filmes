@@ -6,7 +6,6 @@ import com.camacho.rodadafilmes.person.Person
 import com.camacho.rodadafilmes.round.RoundService
 import org.springframework.data.repository.findByIdOrNull
 import org.springframework.stereotype.Service
-import org.springframework.transaction.annotation.Transactional
 import kotlin.random.Random
 
 data class MovieDto(val title: String, val person: Person)
@@ -19,39 +18,35 @@ class MovieService(
         private val movieVisualizationRepository: MovieVisualizationRepository,
         private val roundService: RoundService
 ) {
-    @Transactional
     fun createRecommendation(movieDto: MovieDto): Movie {
         val currentRound = roundService.findCurrentRound()!!
 
-        val newRecommendation = Movie(
+        val newMovie = Movie(
                 title = movieDto.title,
                 person = movieDto.person,
                 round = currentRound,
                 watchOrder = random.nextInt(1000)
         )
 
-        movieRepository.save(newRecommendation)
-
-        val visualization = MovieVisualization(
-                movie = newRecommendation,
-                person = movieDto.person,
-                alreadySawDuringRound = true,
-                alreadySawBeforeRound = true
-        )
-
-        movieVisualizationRepository.save(visualization)
-
-        newRecommendation.movieVisualizations.add(visualization)
+        movieRepository.save(newMovie)
+        createDefaultVisualization(newMovie)
         roundService.advanceToNextStep(currentRound)
-        return newRecommendation
+        return newMovie
     }
 
-    @Transactional
     fun updateRecommendation(movieId: Int, movieDto: MovieDto): Movie {
         val movie = movieRepository.findByIdOrNull(movieId)!!
         movie.title = movieDto.title
         movieRepository.save(movie)
 
+        createDefaultVisualization(movie)
+
+        movieRepository.save(movie)
+        roundService.advanceToNextStep(movie.round)
+        return movie
+    }
+
+    private fun createDefaultVisualization(movie: Movie) {
         movieVisualizationRepository.deleteAll(movie.movieVisualizations)
         movieVisualizationRepository.flush()
 
@@ -66,9 +61,5 @@ class MovieService(
 
         movie.movieVisualizations.clear()
         movie.movieVisualizations.add(visualization)
-
-        movieRepository.save(movie)
-        roundService.advanceToNextStep(movie.round)
-        return movie
     }
 }

@@ -41,13 +41,13 @@ class Movie(
                 return id ?: 0
         }
 
-        fun isReadyToBeSeeing(totalPeople: Long): Boolean {
+        fun tooManyPeopleAlreadySaw(totalPeople: Long): Boolean {
                 val totalVisualizationsBeforeRound = movieVisualizations.count { it.alreadySawBeforeRound }
+                return totalVisualizationsBeforeRound > (totalPeople / 2)
+        }
 
-                val tooManyPeopleAlreadySaw = totalVisualizationsBeforeRound > (totalPeople / 2)
-
+        fun isReadyToBeSeeing(totalPeople: Long): Boolean {
                 val everyOneAnswered = movieVisualizations.size.toLong() == totalPeople
-
-                return everyOneAnswered && !tooManyPeopleAlreadySaw
+                return everyOneAnswered && !tooManyPeopleAlreadySaw(totalPeople)
         }
 }
