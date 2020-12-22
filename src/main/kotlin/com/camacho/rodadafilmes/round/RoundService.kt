@@ -8,7 +8,7 @@ import org.springframework.stereotype.Service
 class RoundDto(round: Round, val totalPeople: Long) {
     val id = round.id
     val step = round.step
-    val movies: List<MovieDto> = round.movies.map { movie -> MovieDto(movie, totalPeople) }
+    val movies: List<MovieDto> = round.movies.map { movie -> MovieDto(movie, totalPeople) }.sortedBy { it.watchOrder }
 }
 
 class MovieDto(movie: Movie, totalPeople: Long) {
