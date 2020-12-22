@@ -37,7 +37,7 @@ class Movie(
     }
 
     fun isReadyToBeSeeing(totalPeople: Long): Boolean {
-        val enoughAnswered = movieVisualizations.count { !it.watchedBeforeRound } > totalPeople / 2
+        val enoughAnswered = movieVisualizations.count { !it.watchedBeforeRound } >= totalPeople / 2
         return enoughAnswered && !tooManyPeopleAlreadySaw(totalPeople)
     }
 
