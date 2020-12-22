@@ -5,7 +5,7 @@ import com.camacho.rodadafilmes.movieVisualization.MovieVisualization
 import com.camacho.rodadafilmes.user.UserRepository
 import org.springframework.stereotype.Service
 
-class RoundDto(round: Round, val totalPeople: Long) {
+class RoundDto(round: Round, val totalPeople: Long, val usersPendingRecommendation: List<String>) {
     val id = round.id
     val step = round.step
     val movies: List<MovieDto> = round.movies.map { movie -> MovieDto(movie, totalPeople) }.sortedBy { it.watchOrder }
