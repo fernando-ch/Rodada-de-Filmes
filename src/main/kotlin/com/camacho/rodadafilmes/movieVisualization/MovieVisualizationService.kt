@@ -1,32 +1,41 @@
 package com.camacho.rodadafilmes.movieVisualization
 
 import com.camacho.rodadafilmes.movie.MovieRepository
-import com.camacho.rodadafilmes.person.Person
 import com.camacho.rodadafilmes.round.RoundService
+import com.camacho.rodadafilmes.user.UserRepository
 import org.springframework.data.repository.findByIdOrNull
 import org.springframework.stereotype.Service
 
 data class MovieVisualizationDto(
-        val alreadySawBeforeRound: Boolean,
-        val alreadySawDuringRound: Boolean,
-        val movieId: Int,
-        val person: Person
+    val watched: Boolean,
+    val title: String,
+    val userId: Int
 )
 
 @Service
 class MovieVisualizationService(
         private val movieVisualizationRepository: MovieVisualizationRepository,
         private val movieRepository: MovieRepository,
-        private val roundService: RoundService
+        private val roundService: RoundService,
+        private val userRepository: UserRepository
 ) {
+    fun vote(visualizationDto: MovieVisualizationDto): MovieVisualization {
+        val visualization = movieVisualizationRepository.findByMovieTitleAndUserId(visualizationDto.title, visualizationDto.userId)
 
-    fun createVisualization(visualizationDto: MovieVisualizationDto): MovieVisualization {
-        val movie = movieRepository.findByIdOrNull(visualizationDto.movieId)!!
+        return if (visualization == null) {
+            createVisualization(visualizationDto)
+        }
+        else {
+            updateVisualization(visualization.id!!, visualizationDto)
+        }
+    }
+
+    private fun createVisualization(visualizationDto: MovieVisualizationDto): MovieVisualization {
+        val movie = movieRepository.findByTitle(visualizationDto.title)!!
         val movieVisualization = movieVisualizationRepository.save(MovieVisualization(
-                alreadySawBeforeRound = visualizationDto.alreadySawBeforeRound,
-                alreadySawDuringRound = false,
+                watchedBeforeRound = visualizationDto.watched,
                 movie = movie,
-                person = visualizationDto.person
+                user = userRepository.findByIdOrNull(visualizationDto.userId)!!
         ))
         
         roundService.advanceToNextStep(movie.round)
@@ -34,10 +43,9 @@ class MovieVisualizationService(
         return movieVisualization
     }
 
-    fun updateVisualization(visualizationId: Int, visualizationDto: MovieVisualizationDto): MovieVisualization {
+    private fun updateVisualization(visualizationId: Int, visualizationDto: MovieVisualizationDto): MovieVisualization {
         val visualization = movieVisualizationRepository.findByIdOrNull(visualizationId)!!
-        visualization.alreadySawBeforeRound = visualizationDto.alreadySawBeforeRound
-        visualization.alreadySawDuringRound = visualizationDto.alreadySawDuringRound
+        visualization.watchedBeforeRound = visualizationDto.watched
 
         movieVisualizationRepository.save(visualization)
 

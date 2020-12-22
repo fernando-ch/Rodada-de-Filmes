@@ -1,53 +1,56 @@
 package com.camacho.rodadafilmes.movie
 
 import com.camacho.rodadafilmes.movieVisualization.MovieVisualization
-import com.camacho.rodadafilmes.person.Person
+import com.camacho.rodadafilmes.user.User
 import com.camacho.rodadafilmes.round.Round
+import com.camacho.rodadafilmes.stream.Stream
 import com.fasterxml.jackson.annotation.JsonIgnore
+import java.util.*
 import javax.persistence.*
 
 @Entity(name = "movies")
 class Movie(
-        @field:Id
-        @field:GeneratedValue(strategy = GenerationType.IDENTITY)
-        val id: Int? = null,
+    @field:Id
+    @field:GeneratedValue(strategy = GenerationType.IDENTITY)
+    val id: Int? = null,
 
-        var title: String,
+    var title: String,
 
-        val watchOrder: Int,
+    val watchOrder: Int,
 
-        @JsonIgnore
-        @ManyToOne(fetch = FetchType.LAZY)
-        val round: Round,
+    @ManyToOne
+    var stream: Stream,
 
-        @ManyToOne
-        val person: Person,
+    @JsonIgnore
+    @ManyToOne(fetch = FetchType.LAZY)
+    val round: Round,
 
-        @OneToMany(mappedBy = "movie")
-        val movieVisualizations: MutableSet<MovieVisualization> = mutableSetOf()
+    @ManyToOne
+    val user: User,
+
+    @OneToMany(mappedBy = "movie")
+    val movieVisualizations: MutableSet<MovieVisualization> = mutableSetOf()
 ) {
-        override fun equals(other: Any?): Boolean {
-                if (this === other) return true
-                if (javaClass != other?.javaClass) return false
+    fun tooManyPeopleAlreadySaw(totalPeople: Long): Boolean {
+        val totalVisualizationsBeforeRound = movieVisualizations.count { it.watchedBeforeRound }
+        return totalVisualizationsBeforeRound > totalPeople / 2
+    }
 
-                other as Movie
+    fun isReadyToBeSeeing(totalPeople: Long): Boolean {
+        val enoughAnswered = movieVisualizations.count { !it.watchedBeforeRound } > totalPeople / 2
+        return enoughAnswered && !tooManyPeopleAlreadySaw(totalPeople)
+    }
 
-                if (id != other.id) return false
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
 
-                return true
+        return when (other) {
+            is Movie -> title == other.title
+            else -> false
         }
+    }
 
-        override fun hashCode(): Int {
-                return id ?: 0
-        }
-
-        fun tooManyPeopleAlreadySaw(totalPeople: Long): Boolean {
-                val totalVisualizationsBeforeRound = movieVisualizations.count { it.alreadySawBeforeRound }
-                return totalVisualizationsBeforeRound > (totalPeople / 2)
-        }
-
-        fun isReadyToBeSeeing(totalPeople: Long): Boolean {
-                val everyOneAnswered = movieVisualizations.size.toLong() == totalPeople
-                return everyOneAnswered && !tooManyPeopleAlreadySaw(totalPeople)
-        }
+    override fun hashCode(): Int {
+        return Objects.hashCode(title)
+    }
 }

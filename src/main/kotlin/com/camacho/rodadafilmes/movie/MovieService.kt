@@ -2,13 +2,15 @@ package com.camacho.rodadafilmes.movie
 
 import com.camacho.rodadafilmes.movieVisualization.MovieVisualization
 import com.camacho.rodadafilmes.movieVisualization.MovieVisualizationRepository
-import com.camacho.rodadafilmes.person.Person
+import com.camacho.rodadafilmes.user.User
 import com.camacho.rodadafilmes.round.RoundService
+import com.camacho.rodadafilmes.stream.StreamRepository
+import com.camacho.rodadafilmes.user.UserRepository
 import org.springframework.data.repository.findByIdOrNull
 import org.springframework.stereotype.Service
 import kotlin.random.Random
 
-data class MovieDto(val title: String, val person: Person)
+data class MovieDto(val title: String, val userId: Int, val stream: String)
 
 private val random = Random
 
@@ -16,20 +18,21 @@ private val random = Random
 class MovieService(
         private val movieRepository: MovieRepository,
         private val movieVisualizationRepository: MovieVisualizationRepository,
-        private val roundService: RoundService
+        private val roundService: RoundService,
+        private val streamRepository: StreamRepository,
+        private val userRepository: UserRepository
 ) {
     fun createRecommendation(movieDto: MovieDto): Movie {
         val currentRound = roundService.findCurrentRound()!!
-
         val newMovie = Movie(
                 title = movieDto.title,
-                person = movieDto.person,
+                user = userRepository.findByIdOrNull(movieDto.userId)!!,
                 round = currentRound,
-                watchOrder = random.nextInt(1000)
+                watchOrder = random.nextInt(20),
+                stream =  streamRepository.findByName(movieDto.stream)!!
         )
 
         movieRepository.save(newMovie)
-        createDefaultVisualization(newMovie)
         roundService.advanceToNextStep(currentRound)
         return newMovie
     }
@@ -37,29 +40,14 @@ class MovieService(
     fun updateRecommendation(movieId: Int, movieDto: MovieDto): Movie {
         val movie = movieRepository.findByIdOrNull(movieId)!!
         movie.title = movieDto.title
+        movie.stream = streamRepository.findByName(movieDto.stream)!!
         movieRepository.save(movie)
 
-        createDefaultVisualization(movie)
+        movieVisualizationRepository.deleteAll(movie.movieVisualizations)
+        movie.movieVisualizations.clear();
 
         movieRepository.save(movie)
         roundService.advanceToNextStep(movie.round)
         return movie
-    }
-
-    private fun createDefaultVisualization(movie: Movie) {
-        movieVisualizationRepository.deleteAll(movie.movieVisualizations)
-        movieVisualizationRepository.flush()
-
-        val visualization = MovieVisualization(
-                movie = movie,
-                person = movie.person,
-                alreadySawDuringRound = true,
-                alreadySawBeforeRound = true
-        )
-
-        movieVisualizationRepository.save(visualization)
-
-        movie.movieVisualizations.clear()
-        movie.movieVisualizations.add(visualization)
     }
 }

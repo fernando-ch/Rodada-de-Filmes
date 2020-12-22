@@ -3,7 +3,7 @@ package com.camacho.rodadafilmes.round
 import com.camacho.rodadafilmes.movie.Movie
 import javax.persistence.*
 
-enum class Step { Recommendation, WhoSawWhat, Watching }
+enum class Step { Recommendation, Voting, Watching }
 
 @Entity(name = "rounds")
 class Round(
@@ -21,8 +21,8 @@ class Round(
 ) {
     fun goToNextStep() {
         step = when (step) {
-            Step.Recommendation -> Step.WhoSawWhat
-            Step.WhoSawWhat -> Step.Watching
+            Step.Recommendation -> Step.Voting
+            Step.Voting -> Step.Watching
             else -> Step.Watching
         }
     }

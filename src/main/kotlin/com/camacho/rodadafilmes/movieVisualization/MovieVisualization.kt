@@ -1,7 +1,7 @@
 package com.camacho.rodadafilmes.movieVisualization
 
 import com.camacho.rodadafilmes.movie.Movie
-import com.camacho.rodadafilmes.person.Person
+import com.camacho.rodadafilmes.user.User
 import com.fasterxml.jackson.annotation.JsonIgnore
 import javax.persistence.*
 
@@ -11,13 +11,12 @@ class MovieVisualization (
         @field:GeneratedValue(strategy = GenerationType.IDENTITY)
         val id: Int? = null,
 
-        var alreadySawBeforeRound: Boolean,
-        var alreadySawDuringRound: Boolean,
+        var watchedBeforeRound: Boolean,
 
         @JsonIgnore
         @ManyToOne(fetch = FetchType.LAZY)
         val movie: Movie,
 
         @ManyToOne
-        val person: Person
+        val user: User
 )
