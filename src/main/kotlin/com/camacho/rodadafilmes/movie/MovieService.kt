@@ -6,8 +6,10 @@ import com.camacho.rodadafilmes.user.User
 import com.camacho.rodadafilmes.round.RoundService
 import com.camacho.rodadafilmes.stream.StreamRepository
 import com.camacho.rodadafilmes.user.UserRepository
+import org.bouncycastle.jce.provider.BouncyCastleProvider
 import org.springframework.data.repository.findByIdOrNull
 import org.springframework.stereotype.Service
+import java.security.Security
 import kotlin.random.Random
 
 data class MovieDto(val title: String, val userId: Int, val stream: String)
@@ -23,6 +25,9 @@ class MovieService(
         private val userRepository: UserRepository
 ) {
     fun createRecommendation(movieDto: MovieDto): Movie {
+        Security.addProvider(BouncyCastleProvider())
+
+
         val currentRound = roundService.findCurrentRound()!!
         val newMovie = Movie(
                 title = movieDto.title,

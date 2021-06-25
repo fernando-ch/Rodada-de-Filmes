@@ -52,3 +52,6 @@ create table movies_visualizations (
 -- insert into recommendations (person_id, round_id, title) values (5, 1, 'Chamado');
 -- insert into recommendations (person_id, round_id, title) values (6, 1, 'Pirula');
 -- insert into recommendations (person_id, round_id, title) values (7, 1, 'Coisas loucas');
+
+alter table movies_visualizations
+add column watched_during_round boolean not null;
