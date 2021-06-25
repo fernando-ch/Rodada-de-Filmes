@@ -5,12 +5,17 @@ import org.springframework.transaction.annotation.Transactional
 import org.springframework.web.bind.annotation.*
 
 @RestController
-@RequestMapping("voting", produces = [MediaType.APPLICATION_JSON_VALUE])
+@RequestMapping("movie-visualization", produces = [MediaType.APPLICATION_JSON_VALUE])
 class MovieVisualizationController(private val visualizationService: MovieVisualizationService) {
 
     @Transactional
-    @PostMapping
+    @PostMapping("voting")
     fun vote(@RequestBody visualizationDto: MovieVisualizationDto): MovieVisualization {
         return visualizationService.vote(visualizationDto)
+    }
+
+    @PutMapping("toggle-watched")
+    fun toggleWatched(@RequestBody visualizationDto: MovieVisualizationDto) {
+        visualizationService.toggleWatched(visualizationDto)
     }
 }

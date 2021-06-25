@@ -12,6 +12,7 @@ class MovieVisualization (
         val id: Int? = null,
 
         var watchedBeforeRound: Boolean,
+        var watchedDuringRound: Boolean,
 
         @JsonIgnore
         @ManyToOne(fetch = FetchType.LAZY)

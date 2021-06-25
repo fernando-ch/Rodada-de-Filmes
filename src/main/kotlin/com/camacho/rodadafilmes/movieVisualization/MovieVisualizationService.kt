@@ -1,5 +1,6 @@
 package com.camacho.rodadafilmes.movieVisualization
 
+import com.camacho.rodadafilmes.messageNotification.MessageNotificationService
 import com.camacho.rodadafilmes.movie.MovieRepository
 import com.camacho.rodadafilmes.round.RoundService
 import com.camacho.rodadafilmes.user.UserRepository
@@ -17,7 +18,8 @@ class MovieVisualizationService(
         private val movieVisualizationRepository: MovieVisualizationRepository,
         private val movieRepository: MovieRepository,
         private val roundService: RoundService,
-        private val userRepository: UserRepository
+        private val userRepository: UserRepository,
+        private val notificationService: MessageNotificationService
 ) {
     fun vote(visualizationDto: MovieVisualizationDto): MovieVisualization {
         val visualization = movieVisualizationRepository.findByMovieTitleAndUserId(visualizationDto.title, visualizationDto.userId)
@@ -34,6 +36,7 @@ class MovieVisualizationService(
         val movie = movieRepository.findByTitle(visualizationDto.title)!!
         val movieVisualization = movieVisualizationRepository.save(MovieVisualization(
                 watchedBeforeRound = visualizationDto.watched,
+                watchedDuringRound = false,
                 movie = movie,
                 user = userRepository.findByIdOrNull(visualizationDto.userId)!!
         ))
@@ -51,5 +54,28 @@ class MovieVisualizationService(
 
         roundService.advanceToNextStep(visualization.movie.round)
         return visualization
+    }
+
+    fun toggleWatched(visualizationDto: MovieVisualizationDto) {
+        val visualization = movieVisualizationRepository.findByMovieTitleAndUserId(visualizationDto.title, visualizationDto.userId)
+
+        if (visualization != null) {
+            visualization.watchedDuringRound = visualizationDto.watched
+            movieVisualizationRepository.save(visualization)
+        }
+        else {
+            val movie = movieRepository.findByTitle(visualizationDto.title)!!
+            val movieVisualization = movieVisualizationRepository.save(MovieVisualization(
+                watchedBeforeRound = false,
+                watchedDuringRound = visualizationDto.watched,
+                movie = movie,
+                user = userRepository.findByIdOrNull(visualizationDto.userId)!!
+            ))
+            movieVisualizationRepository.save(movieVisualization)
+        }
+
+        val movie = movieRepository.findByTitle(visualizationDto.title)!!
+        val notificationMessage = "${movie.watchedTotal()}/${userRepository.count()} assistiram ${movie.title}"
+        notificationService.notifyAllUserExcept(visualizationDto.userId, notificationMessage)
     }
 }

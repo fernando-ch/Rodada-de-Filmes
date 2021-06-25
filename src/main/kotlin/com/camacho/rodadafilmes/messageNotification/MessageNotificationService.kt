@@ -57,4 +57,10 @@ class MessageNotificationService(
     fun sendNotification(subscription: Subscription, message: String) {
         pushService.send(Notification(subscription, message))
     }
+
+    fun notifyAllUserExcept(userToExclude: Int, message: String) {
+        userSubscriptions.filter { it.user.id != userToExclude }.forEach {
+            sendNotification(it.subscription, message)
+        }
+    }
 }

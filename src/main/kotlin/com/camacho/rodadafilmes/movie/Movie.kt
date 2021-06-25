@@ -41,6 +41,8 @@ class Movie(
         return enoughAnswered && !tooManyPeopleAlreadySaw(totalPeople)
     }
 
+    fun watchedTotal() = movieVisualizations.count { it.watchedDuringRound }
+
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
 

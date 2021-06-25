@@ -20,10 +20,12 @@ class MovieDto(movie: Movie, totalPeople: Long) {
     val stream: String = movie.stream.name
     val watchOrder: Int = movie.watchOrder
     val movieVisualizations: List<MovieVisualizationDto> = movie.movieVisualizations.map { MovieVisualizationDto(it) }
+    val watchedTotal = movieVisualizations.count { it.watchedDuringRound }
 }
 
 class MovieVisualizationDto(movieVisualization: MovieVisualization) {
     val watchedBeforeRound: Boolean = movieVisualization.watchedBeforeRound
+    val watchedDuringRound: Boolean = movieVisualization.watchedDuringRound
     val movieId: Int = movieVisualization.movie.id!!
     val userId: Int = movieVisualization.user.id!!
 }
