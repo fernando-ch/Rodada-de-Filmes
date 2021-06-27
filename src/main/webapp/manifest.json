@@ -1,7 +1,12 @@
 {
-  "name": "SVELTE-PWA",
-  "short_name": "SVELTE-PWA",
+  "name": "Rodada de Filmes",
+  "short_name": "Rodada de Filmes",
   "icons": [
+    {
+      "src": "/cinema-maskable-icon.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
   ],
   "start_url": "/index.html",
   "display": "standalone",

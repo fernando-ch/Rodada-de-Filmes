@@ -4,13 +4,26 @@
 	<meta charset='utf-8'>
 	<meta name='viewport' content='width=device-width,initial-scale=1'>
 
-	<title>Svelte app</title>
+	<title>Rodada de Filmes</title>
 
-	<link rel='icon' type='image/png' href='/favicon.png'>
-	<link rel='stylesheet' href='/global.css?2'>
-	<link rel='stylesheet' href='/build/bundle.css?2'>
+	<link rel="manifest" href="/manifest.json" />
+	<meta name="theme-color" content="#2F3BA2" />
 
-	<script defer src='/build/bundle.js?2'></script>
+	<meta name="apple-mobile-web-app-capable" content="yes" />
+	<meta name="apple-mobile-web-app-status-bar-style" content="black" />
+	<meta name="apple-mobile-web-app-title" content="Svelte PWA" />
+	<link rel="apple-touch-icon" href="/cinema-maskable-icon.png" />
+
+	<link rel='icon' type='image/png' href='/cinema-maskable-icon.png'>
+	<link rel='stylesheet' href='/global.css'>
+	<link rel='stylesheet' href='/build/bundle.css'>
+
+	<script
+			type="module"
+			src="https://cdn.jsdelivr.net/npm/@pwabuilder/pwainstall"
+	></script>
+
+	<script defer src='/build/bundle.js'></script>
 </head>
 
 <body>

@@ -1,7 +1,7 @@
 'use strict';
 
 // Update cache names any time any of the cached files change.
-const CACHE_NAME = 'static-cache-v1';
+const CACHE_NAME = 'static-cache-v2';
 
 // Add list of files to cache here.
 const FILES_TO_CACHE = [
@@ -10,7 +10,15 @@ const FILES_TO_CACHE = [
     '/build/bundle.css',
     '/build/bundle.js',
     '/cinema.jpeg',
+    '/cinema-maskable-icon.png',
+    '/movie-transparent-icon.png',
     '/favicon.png',
+    'netflix-icon.png',
+    '/disney-plus-icon.png',
+    '/globoplay-icon.png',
+    '/hbo-icon.png',
+    '/prime-icon.png',
+    '/telecine-icon.png',
 ];
 
 self.addEventListener('install', (evt) => {
@@ -27,16 +35,20 @@ self.addEventListener('install', (evt) => {
 });
 
 self.addEventListener('push', function(event) {
+    const data = event.data.json()
     const options = {
-        body: event.data.text(),
+        tag: data.title,
+        icon: '/cinema-maskable-icon.png',
+        badge: '/movie-transparent-icon.png',
+        body: data.message,
         vibrate: [100, 50, 100],
         data: {
             dateOfArrival: Date.now(),
             primaryKey: '2'
-        }
+        },
     };
     event.waitUntil(
-        self.registration.showNotification('', options)
+        self.registration.showNotification('Rodada de Filmes', options)
     );
 });
 
@@ -69,7 +81,7 @@ self.addEventListener('fetch', (evt) => {
             .catch(() => {
                 return caches.open(CACHE_NAME)
                     .then((cache) => {
-                        return cache.match('index.html');
+                        return cache.match('offline.html');
                     });
             })
     );
