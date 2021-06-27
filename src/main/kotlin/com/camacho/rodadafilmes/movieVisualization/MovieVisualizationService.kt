@@ -75,7 +75,10 @@ class MovieVisualizationService(
         }
 
         val movie = movieRepository.findByTitle(visualizationDto.title)!!
-        val notificationMessage = "${movie.watchedTotal()}/${userRepository.count()} assistiram ${movie.title}"
+        val notificationMessage = """{
+            "title": "${movie.title}",
+            "message": "${movie.watchedTotal()} pessoas de ${userRepository.count()} já assistiram ${movie.title}"
+        }""".trimIndent()
         notificationService.notifyAllUserExcept(visualizationDto.userId, notificationMessage)
     }
 }

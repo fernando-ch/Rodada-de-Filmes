@@ -55,3 +55,9 @@ create table movies_visualizations (
 
 alter table movies_visualizations
 add column watched_during_round boolean not null;
+
+create table user_subscriptions (
+    id serial not null primary key,
+    user_id integer not null references users(id) unique,
+    endpoint varchar not null unique
+)

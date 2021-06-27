@@ -16,10 +16,10 @@ class MessageNotificationService(
     @Value("\${vapid.public.key}")
     private val publicKey: String,
     @Value("\${vapid.private.key}")
-    private val privateKey: String
+    private val privateKey: String,
+    private val userSubscriptionRepository: UserSubscriptionRepository
 ) {
     private lateinit var pushService: PushService
-    private var userSubscriptions = mutableListOf<UserSubscription>()
 
     @PostConstruct
     @Throws(GeneralSecurityException::class)
@@ -30,28 +30,23 @@ class MessageNotificationService(
 
     fun subscribe(user: User, subscriptionDto: SubscriptionDto) {
         println("User ${user.name} Subscribed to ${subscriptionDto.endpoint}")
-        val subscription = Subscription(subscriptionDto.endpoint, Subscription.Keys(subscriptionDto.key, subscriptionDto.auth))
-        val userSubscription = UserSubscription(user, subscription)
-
-        val sub = userSubscriptions.find { it.user.id == user.id }
+        val sub = userSubscriptionRepository.findOneByUserId(user.id!!)
 
         if (sub == null) {
-            if (userSubscriptions.none { it.subscription.endpoint == subscription.endpoint }) {
-                userSubscriptions.add(userSubscription)
+            if (!userSubscriptionRepository.existsByEndpoint(subscriptionDto.endpoint)) {
+                val userSubscription = UserSubscription(
+                    user = user,
+                    endpoint = subscriptionDto.endpoint,
+                    key = subscriptionDto.key,
+                    auth = subscriptionDto.auth
+                )
+                userSubscriptionRepository.save(userSubscription)
             }
         }
         else {
-            sub.subscription = userSubscription.subscription
+            sub.endpoint = subscriptionDto.endpoint
+            userSubscriptionRepository.save(sub)
         }
-
-//        sendNotification(userSubscriptions.first().subscription, """{
-//            "body": "FREEEEDOM"
-//        }""".trimIndent())
-    }
-
-    fun unsubscribe(endpoint: String) {
-        println("Unsubscribed from $endpoint")
-        userSubscriptions = userSubscriptions.filter { endpoint != it.subscription.endpoint }.toMutableList()
     }
 
     fun sendNotification(subscription: Subscription, message: String) {
@@ -59,8 +54,10 @@ class MessageNotificationService(
     }
 
     fun notifyAllUserExcept(userToExclude: Int, message: String) {
+        val userSubscriptions = userSubscriptionRepository.findAll()
         userSubscriptions.filter { it.user.id != userToExclude }.forEach {
-            sendNotification(it.subscription, message)
+            val subscription = Subscription(it.endpoint, Subscription.Keys(it.key, it.auth))
+            sendNotification(subscription, message)
         }
     }
 }
