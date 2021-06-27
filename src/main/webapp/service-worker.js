@@ -1,7 +1,7 @@
 'use strict';
 
 // Update cache names any time any of the cached files change.
-const CACHE_NAME = 'static-cache-v3';
+const CACHE_NAME = 'static-cache-v4';
 
 // Add list of files to cache here.
 const FILES_TO_CACHE = [
@@ -69,15 +69,20 @@ self.addEventListener('activate', (evt) => {
     self.clients.claim();
 });
 
-self.addEventListener('fetch', function(event) {
-    event.respondWith(
-        caches.open(CACHE_NAME).then(function(cache) {
-            return cache.match(event.request).then(function (response) {
-                return response || fetch(event.request).then(function(response) {
-                    cache.put(event.request, response.clone());
-                    return response;
-                });
-            });
-        })
+self.addEventListener('fetch', (evt) => {
+    console.log('[ServiceWorker] Fetch', evt.request.url);
+    // Add fetch event handler here.
+    if (evt.request.mode !== 'navigate') {
+        // Not a page navigation, bail.
+        return;
+    }
+    evt.respondWith(
+        fetch(evt.request)
+            .catch(() => {
+                return caches.open(CACHE_NAME)
+                    .then((cache) => {
+                        return cache.match('offline.html');
+                    });
+            })
     );
 });
