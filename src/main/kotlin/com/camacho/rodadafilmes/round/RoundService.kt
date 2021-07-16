@@ -77,4 +77,17 @@ class RoundService(
 
         roundRepository.save(round)
     }
+
+    fun createRound() {
+        val currentRound = findCurrentRound()!!
+        val newRound = Round(currentRound.id!! + 1)
+        currentRound.current = false
+        roundRepository.save(currentRound)
+        roundRepository.save(newRound)
+
+        messageNotificationService.notifyAllUsers(NotificationMessage(
+            title = "Nova Rodada",
+            message = "Uma nova rodada foi iniciada, recomende seu filme."
+        ))
+    }
 }

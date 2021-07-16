@@ -11,7 +11,7 @@ class Round(
         @field:GeneratedValue(strategy = GenerationType.IDENTITY)
         val id: Int? = null,
 
-        val current: Boolean = true,
+        var current: Boolean = true,
 
         @field:Enumerated(EnumType.STRING)
         var step: Step = Step.Recommendation,

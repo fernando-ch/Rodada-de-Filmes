@@ -1,8 +1,9 @@
 package com.camacho.rodadafilmes.messageNotification
 
-class NotificationMessage(val title: String, val message: String) {
+class NotificationMessage(val title: String, val tag: String = "", val message: String) {
     fun toJsonString() = """{
-        "title": "$title",
+        "title": "Rodada de Filmes - $title",
+        "tag": "$title - $tag",
         "message": "$message"
     }""".trimIndent()
 }

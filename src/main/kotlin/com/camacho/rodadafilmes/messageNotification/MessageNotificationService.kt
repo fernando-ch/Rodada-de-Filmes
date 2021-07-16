@@ -62,11 +62,11 @@ class MessageNotificationService(
             }
     }
 
-    fun notifyAllUsers(message: NotificationMessage) {
+    fun notifyAllUsers(notificationMessage: NotificationMessage) {
         userSubscriptionRepository.findAll()
             .forEach {
                 val subscription = Subscription(it.endpoint, Subscription.Keys(it.key, it.auth))
-                sendNotification(subscription, message.toJsonString())
+                sendNotification(subscription, notificationMessage.toJsonString())
             }
     }
 

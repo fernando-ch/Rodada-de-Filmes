@@ -61,6 +61,7 @@ class MovieService(
                 userIdToExclude = movie.user.id!!,
                 notificationMessage = NotificationMessage(
                     title = "Nova Recomendação",
+                    tag = movie.id.toString(),
                     message = "Um filme que muitos já assitiram foi trocado para ${movie.title}"
                 )
             )
