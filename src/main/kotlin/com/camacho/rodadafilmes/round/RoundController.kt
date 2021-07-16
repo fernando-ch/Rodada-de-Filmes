@@ -15,10 +15,7 @@ class RoundController(private val roundService: RoundService, private val userRe
         return when (val round = roundService.findCurrentRound()) {
             null -> null
             else -> {
-                val users = userRepository.findAll()
-                val usersWithRecommendations = round.movies.map { it.user.id }
-                val usersPendingRecommendation = users.filter { user -> user.id !in usersWithRecommendations }.map { it.name }
-                RoundDto(round = round, totalPeople = userRepository.count(), usersPendingRecommendation = usersPendingRecommendation)
+                RoundDto(round = round, totalPeople = userRepository.count())
             }
         }
     }

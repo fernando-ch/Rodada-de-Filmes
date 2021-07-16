@@ -1,15 +1,14 @@
 package com.camacho.rodadafilmes.movie
 
-import com.camacho.rodadafilmes.movieVisualization.MovieVisualization
+import com.camacho.rodadafilmes.messageNotification.MessageNotificationService
+import com.camacho.rodadafilmes.messageNotification.NotificationMessage
 import com.camacho.rodadafilmes.movieVisualization.MovieVisualizationRepository
-import com.camacho.rodadafilmes.user.User
 import com.camacho.rodadafilmes.round.RoundService
+import com.camacho.rodadafilmes.round.Step
 import com.camacho.rodadafilmes.stream.StreamRepository
 import com.camacho.rodadafilmes.user.UserRepository
-import org.bouncycastle.jce.provider.BouncyCastleProvider
 import org.springframework.data.repository.findByIdOrNull
 import org.springframework.stereotype.Service
-import java.security.Security
 import kotlin.random.Random
 
 data class MovieDto(val title: String, val userId: Int, val stream: String)
@@ -22,12 +21,10 @@ class MovieService(
         private val movieVisualizationRepository: MovieVisualizationRepository,
         private val roundService: RoundService,
         private val streamRepository: StreamRepository,
-        private val userRepository: UserRepository
+        private val userRepository: UserRepository,
+        private val messageNotificationService: MessageNotificationService
 ) {
     fun createRecommendation(movieDto: MovieDto): Movie {
-        Security.addProvider(BouncyCastleProvider())
-
-
         val currentRound = roundService.findCurrentRound()!!
         val newMovie = Movie(
                 title = movieDto.title,
@@ -38,7 +35,13 @@ class MovieService(
         )
 
         movieRepository.save(newMovie)
+        val notificationMessage = NotificationMessage(
+            title = "Recomendação",
+            message = "${currentRound.movies.size} pessoas de ${userRepository.count()} já recomendaram um filme"
+        )
+        messageNotificationService.notifyAllUsersExcept(newMovie.user.id!!, notificationMessage)
         roundService.advanceToNextStep(currentRound)
+
         return newMovie
     }
 
@@ -49,9 +52,20 @@ class MovieService(
         movieRepository.save(movie)
 
         movieVisualizationRepository.deleteAll(movie.movieVisualizations)
-        movie.movieVisualizations.clear();
-
+        movie.movieVisualizations.clear()
         movieRepository.save(movie)
+
+        val currentRound = roundService.findCurrentRound()
+        if (currentRound?.step == Step.Voting) {
+            messageNotificationService.notifyAllUsersExcept(
+                userIdToExclude = movie.user.id!!,
+                notificationMessage = NotificationMessage(
+                    title = "Nova Recomendação",
+                    message = "Um filme que muitos já assitiram foi trocado para ${movie.title}"
+                )
+            )
+        }
+
         roundService.advanceToNextStep(movie.round)
         return movie
     }

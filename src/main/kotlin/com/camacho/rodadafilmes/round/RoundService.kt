@@ -1,16 +1,20 @@
 package com.camacho.rodadafilmes.round
 
+import com.camacho.rodadafilmes.messageNotification.MessageNotificationService
+import com.camacho.rodadafilmes.messageNotification.NotificationMessage
 import com.camacho.rodadafilmes.movie.Movie
 import com.camacho.rodadafilmes.movieVisualization.MovieVisualization
 import com.camacho.rodadafilmes.user.UserRepository
 import org.springframework.stereotype.Service
 
-class RoundDto(round: Round, val totalPeople: Long, val usersPendingRecommendation: List<String>) {
+@Suppress("unused")
+class RoundDto(round: Round, val totalPeople: Long) {
     val id = round.id
     val step = round.step
     val movies: List<MovieDto> = round.movies.map { movie -> MovieDto(movie, totalPeople) }.sortedBy { it.watchOrder }
 }
 
+@Suppress("unused", "MemberVisibilityCanBePrivate")
 class MovieDto(movie: Movie, totalPeople: Long) {
     val id: Int = movie.id!!
     val title: String = movie.title
@@ -23,6 +27,7 @@ class MovieDto(movie: Movie, totalPeople: Long) {
     val watchedTotal = movieVisualizations.count { it.watchedDuringRound }
 }
 
+@Suppress("unused")
 class MovieVisualizationDto(movieVisualization: MovieVisualization) {
     val watchedBeforeRound: Boolean = movieVisualization.watchedBeforeRound
     val watchedDuringRound: Boolean = movieVisualization.watchedDuringRound
@@ -33,7 +38,8 @@ class MovieVisualizationDto(movieVisualization: MovieVisualization) {
 @Service
 class RoundService(
         private val roundRepository: RoundRepository,
-        private val userRepository: UserRepository
+        private val userRepository: UserRepository,
+        private val messageNotificationService: MessageNotificationService
 ) {
     fun findCurrentRound() = roundRepository.findByCurrent(true)
 
@@ -45,14 +51,28 @@ class RoundService(
 
                 if (totalPeople == totalRecommendationsInRound) {
                     round.goToNextStep()
+
+                    val notificationMessage = NotificationMessage(
+                        title = "Votação Liberada",
+                        message = "Todos já recomendaram um filme. A votação está aberta."
+                    )
+                    messageNotificationService.notifyAllUsers(notificationMessage)
                 }
             }
             Step.Voting -> {
                 val totalPeople = userRepository.count()
 
-                if (round.movies.all { it.isReadyToBeSeeing(totalPeople) })
+                if (round.movies.all { it.isReadyToBeSeeing(totalPeople) }) {
                     round.goToNextStep()
+
+                    val notificationMessage = NotificationMessage(
+                        title = "Votação Encerrada",
+                        message = "Todos já votaram nos filmes. A lista já está disponível."
+                    )
+                    messageNotificationService.notifyAllUsers(notificationMessage)
+                }
             }
+            else -> throw Exception("Round step ${round.step} is not configured")
         }
 
         roundRepository.save(round)

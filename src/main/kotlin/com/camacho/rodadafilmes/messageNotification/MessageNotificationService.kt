@@ -53,11 +53,28 @@ class MessageNotificationService(
         pushService.send(Notification(subscription, message))
     }
 
-    fun notifyAllUserExcept(userToExclude: Int, message: String) {
-        val userSubscriptions = userSubscriptionRepository.findAll()
-        userSubscriptions.filter { it.user.id != userToExclude }.forEach {
-            val subscription = Subscription(it.endpoint, Subscription.Keys(it.key, it.auth))
-            sendNotification(subscription, message)
+    fun notifyAllUsersExcept(userIdToExclude: Int, notificationMessage: NotificationMessage) {
+        userSubscriptionRepository.findAll()
+            .filter { it.user.id != userIdToExclude }
+            .forEach {
+                val subscription = Subscription(it.endpoint, Subscription.Keys(it.key, it.auth))
+                sendNotification(subscription, notificationMessage.toJsonString())
+            }
+    }
+
+    fun notifyAllUsers(message: NotificationMessage) {
+        userSubscriptionRepository.findAll()
+            .forEach {
+                val subscription = Subscription(it.endpoint, Subscription.Keys(it.key, it.auth))
+                sendNotification(subscription, message.toJsonString())
+            }
+    }
+
+    fun notifyOnly(userIdToNotify: Int, message: NotificationMessage) {
+        val userSubscription = userSubscriptionRepository.findOneByUserId(userIdToNotify)
+        if (userSubscription != null) {
+            val subscription = Subscription(userSubscription.endpoint, Subscription.Keys(userSubscription.key, userSubscription.auth))
+            sendNotification(subscription, message.toJsonString())
         }
     }
 }

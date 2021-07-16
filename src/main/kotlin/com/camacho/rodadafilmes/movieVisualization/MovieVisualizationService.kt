@@ -1,6 +1,8 @@
 package com.camacho.rodadafilmes.movieVisualization
 
 import com.camacho.rodadafilmes.messageNotification.MessageNotificationService
+import com.camacho.rodadafilmes.messageNotification.NotificationMessage
+import com.camacho.rodadafilmes.movie.Movie
 import com.camacho.rodadafilmes.movie.MovieRepository
 import com.camacho.rodadafilmes.round.RoundService
 import com.camacho.rodadafilmes.user.UserRepository
@@ -40,10 +42,24 @@ class MovieVisualizationService(
                 movie = movie,
                 user = userRepository.findByIdOrNull(visualizationDto.userId)!!
         ))
-        
+
+        notifyIfMovieNeedsToChange(movie)
         roundService.advanceToNextStep(movie.round)
         
         return movieVisualization
+    }
+
+    private fun notifyIfMovieNeedsToChange(movie: Movie) {
+        val totalPeople = userRepository.count()
+        if (movie.tooManyPeopleAlreadySaw(totalPeople)) {
+            notificationService.notifyOnly(
+                userIdToNotify = movie.user.id!!,
+                message = NotificationMessage(
+                    title = "Recomende Outro",
+                    message = "Muitas pessoas já viram ${movie.title}. Você precisa escolher outro filme."
+                )
+            )
+        }
     }
 
     private fun updateVisualization(visualizationId: Int, visualizationDto: MovieVisualizationDto): MovieVisualization {
@@ -52,6 +68,7 @@ class MovieVisualizationService(
 
         movieVisualizationRepository.save(visualization)
 
+        notifyIfMovieNeedsToChange(visualization.movie)
         roundService.advanceToNextStep(visualization.movie.round)
         return visualization
     }
@@ -75,10 +92,10 @@ class MovieVisualizationService(
         }
 
         val movie = movieRepository.findByTitle(visualizationDto.title)!!
-        val notificationMessage = """{
-            "title": "${movie.title}",
-            "message": "${movie.watchedTotal()} pessoas de ${userRepository.count()} já assistiram ${movie.title}"
-        }""".trimIndent()
-        notificationService.notifyAllUserExcept(visualizationDto.userId, notificationMessage)
+        val notificationMessage = NotificationMessage(
+            title = movie.title,
+            message = "${movie.watchedTotal()} pessoas de ${userRepository.count()} já assistiram ${movie.title}"
+        )
+        notificationService.notifyAllUsersExcept(visualizationDto.userId, notificationMessage)
     }
 }
